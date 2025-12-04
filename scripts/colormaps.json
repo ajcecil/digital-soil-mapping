@@ -9,7 +9,7 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "Soil pH"
+    "label": "pH"
   },
   "BPH": {
     "colors": [
@@ -21,7 +21,7 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "Soil pH"
+    "label": "BpH"
   },
   "OM": {
     "colors": [
@@ -33,6 +33,6 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "Soil Organic Matter"
+    "label": "Organic Matter"
   }
 }

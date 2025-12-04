@@ -10,7 +10,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 import json
 
 #region  Property Assignment
-PROPERTY = "BPH"
+PROPERTY = "PH"
 #endregion
 
 #region GitHub Setup
@@ -172,7 +172,7 @@ sm.set_array([])
 cbar = fig.colorbar(sm, cax=ax)
 cbar.set_label(legend_label, rotation=270, labelpad=15)
 
-ticks = np.linspace(data_min, 14, 6)
+ticks = np.linspace(data_min, data_max, 7)
 cbar.set_ticks(ticks)
 tick_labels = [str(int(t)) for t in ticks[:-1]] + ["335"]
 cbar.set_ticklabels(tick_labels)
