@@ -7,17 +7,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 from github import Github, Auth
 from matplotlib.colors import ListedColormap, BoundaryNorm
+import json
 
-# -----------------------------
-# GitHub Setup
-# -----------------------------
-GITHUB_TOKEN = ""
+#region  Property Assignment
+PROPERTY = "PH"
+#endregion
+
+#region GitHub Setup
+
+# Path to token
+token_file = r"secrets\map_token.txt"
+
+# Read token file
+with open(token_file, "r") as f:
+    GITHUB_TOKEN = f.read().strip()
+
+
 GITHUB_REPO = "ajcecil/digital-soil-mapping"
 
 auth = Auth.Token(GITHUB_TOKEN)
 g = Github(auth=auth)
 repo = g.get_repo(GITHUB_REPO)
 
+#endregion
+
+#region Function Building
 def upload_to_github(local_path, git_path, message="committing file"):
     """Upload or update file to GitHub repo"""
     try:
@@ -31,36 +45,48 @@ def upload_to_github(local_path, git_path, message="committing file"):
             data = f.read()
         repo.create_file(git_path, message, data, branch="main")
         print(f"{git_path} CREATED on GitHub")
+#endregion
+
+#region Tile Generation
+json_path = r"github\digital-soil-mapping\scripts\colormaps.json"
+
+with open(json_path, "r") as f:
+    cmap_config = json.load(f)
+
+if PROPERTY not in cmap_config:
+    raise ValueError(f"Property '{PROPERTY}' not found in colormaps.json")
+
+colors = cmap_config[PROPERTY]["colors"]
+legend_label = cmap_config[PROPERTY].get("label", PROPERTY)
+
+# Open raster to compute data stats
+tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
+with rasterio.open(tiff_path) as src:
+    data = src.read(1, masked=True)
+
+# Compute mean and standard deviation
+data_mean = np.mean(data)
+data_std = np.std(data)
+
+# Generate 7 categories based on ±3 standard deviations
+bin_edges = [data_mean + i * data_std for i in range(-3, 4)]
+
+# Build discrete colormap + normalizer
+cmap = ListedColormap(colors)
+norm = BoundaryNorm(bin_edges, cmap.N)
 
 
-# -----------------------------
-# Tile Generation
-# -----------------------------
-tiff_path = r"data\properties\PH_prediction.tif"
-tiles_dir = r"github\digital-soil-mapping\docs\page_files\maps\PH\tiles"
+tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
+tiles_dir = fr"github\digital-soil-mapping\docs\page_files\maps\{PROPERTY}\tiles"
 
 TILE_SIZE = 256
-zoom_levels = range(9, 19)
+zoom_levels = range(9, 16)
 
 WEBMERC_MIN = -20037508.342789244
 WEBMERC_MAX = 20037508.342789244
 WEBMERC_SIZE = WEBMERC_MAX - WEBMERC_MIN
 
 # cmap = plt.get_cmap("inferno")
-
-# ----- DEFINE VALUE RANGES -----
-bin_edges = [2.301, 4.393, 5.241, 6.090, 6.939, 7.787, 8.636, 10.6]   # 8 classes → 9 edges
-
-# ----- DEFINE COLORS (one per class) -----
-colors = [
-    "#5f87c1",  # Low
-    "#98adc6",
-    "#cad5ca",
-    "#f9fecc",
-    "#f9c697",
-    "#f08a64",
-    "#e04535"   # High
-]
 
 # Build discrete colormap + normalizer
 cmap = ListedColormap(colors)
@@ -127,16 +153,16 @@ with rasterio.open(tiff_path) as src:
                 img.save(file_path)
 
                 # Upload to GitHub
-                git_path = f"docs/page_files/maps/PH/tiles/{z}/{x}/{y}.png"
+                git_path = f"docs/page_files/maps/{PROPERTY}/tiles/{z}/{x}/{y}.png"
                 upload_to_github(file_path, git_path)
 
 print("Tile generation + GitHub upload complete!")
+#endregion
 
 
-# -----------------------------
-# Legend (also uploaded)
-# -----------------------------
-main_dir = r'github\digital-soil-mapping\docs\page_files\maps\PH'
+#region Legend Build
+
+main_dir = rf'github\digital-soil-mapping\docs\page_files\maps\{PROPERTY}'
 legend_path = os.path.join(main_dir, "legend.png")
 
 fig, ax = plt.subplots(figsize=(2, 6))
@@ -146,7 +172,7 @@ sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 sm.set_array([])
 
 cbar = fig.colorbar(sm, cax=ax)
-cbar.set_label('Soil pH', rotation=270, labelpad=15)
+cbar.set_label(legend_label, rotation=270, labelpad=15)
 
 ticks = np.linspace(data_min, 14, 6)
 cbar.set_ticks(ticks)
@@ -158,4 +184,6 @@ plt.close(fig)
 print(f"Legend saved locally to {legend_path}")
 
 # Upload legend to GitHub
-upload_to_github(legend_path, "docs/page_files/maps/PH/legend.png")
+upload_to_github(legend_path, f"docs/page_files/maps/{PROPERTY}/legend.png")
+
+#endregion

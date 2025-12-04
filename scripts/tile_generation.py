@@ -1,5 +1,4 @@
 import os
-import math
 import rasterio
 from rasterio.windows import from_bounds
 from rasterio.enums import Resampling
