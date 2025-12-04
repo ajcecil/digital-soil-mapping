@@ -97,19 +97,32 @@ norm = BoundaryNorm(bin_edges, cmap.N)
 def mercator_tile_bounds(x, y, z):
     n = 2 ** z
     tile_size = WEBMERC_SIZE / n
+
     minx = WEBMERC_MIN + x * tile_size
-    maxx = WEBMERC_MIN + (x + 1) * tile_size
-    maxy = WEBMERC_MAX - y * tile_size
+    maxx = minx + tile_size
+
     miny = WEBMERC_MAX - (y + 1) * tile_size
+    maxy = WEBMERC_MAX - y * tile_size
+
     return minx, miny, maxx, maxy
+
 
 def get_tile_range(bounds, zoom):
     n = 2 ** zoom
+
     x_min = int((bounds.left - WEBMERC_MIN) / WEBMERC_SIZE * n)
     x_max = int((bounds.right - WEBMERC_MIN) / WEBMERC_SIZE * n)
     y_min = int((WEBMERC_MAX - bounds.top) / WEBMERC_SIZE * n)
     y_max = int((WEBMERC_MAX - bounds.bottom) / WEBMERC_SIZE * n)
+
+    # ✅ CLAMP TO VALID XYZ RANGE
+    x_min = max(0, x_min)
+    y_min = max(0, y_min)
+    x_max = min(n - 1, x_max)
+    y_max = min(n - 1, y_max)
+
     return x_min, x_max, y_min, y_max
+
 
 
 with rasterio.open(tiff_path) as src:
@@ -132,11 +145,13 @@ with rasterio.open(tiff_path) as src:
                     out_shape=(TILE_SIZE, TILE_SIZE),
                     resampling=Resampling.bilinear
                 )
+                if np.all(tile_array == src.nodata):
+                    continue
 
                 # Clip
                 tile_array_clipped = np.clip(tile_array, None, 335)
 
-                rgba = (cmap(norm(tile_array)) * 255).astype(np.uint8)
+                rgba = (cmap(norm(tile_array_clipped)) * 255).astype(np.uint8)
 
                 if src.nodata is not None:
                     mask = tile_array == src.nodata

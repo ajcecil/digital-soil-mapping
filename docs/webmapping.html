@@ -66,16 +66,20 @@
   });
 
   // Add your raster tiles
-  const phLayer = new BoundedTileLayer('maps/PH/tiles/{z}/{x}/{y}.png', {
+  const phLayer = new BoundedTileLayer('page_files/maps/PH/tiles/{z}/{x}/{y}.png', {
     attribution: 'pH Map Tiles',
     opacity: 1,
-    noWrap: true
+    noWrap: true,
+    minZoom: 9,
+    maxZoom: 14      // ← must match what Python actually generated
   }).addTo(map);
 
-  const bphLayer = new BoundedTileLayer('maps/BPH/tiles/{z}/{x}/{y}.png', {
+  const bphLayer = new BoundedTileLayer('page_files/maps/BPH/tiles/{z}/{x}/{y}.png', {
     attribution: 'BpH Tiles',
     opacity: 1,
-    noWrap: true
+    noWrap: true,
+    minZoom: 9,
+    maxZoom: 14
   });
 
   // Add layer control (shows name)
@@ -112,7 +116,7 @@
   });
 
 
-  const testlegend = L.control({ position: 'bottomright' });
+  const bphlegend = L.control({ position: 'bottomright' });
   bphlegend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
     div.innerHTML = `
@@ -123,13 +127,13 @@
   };
   // Show legend only when Soil pH layer is active
   map.on('overlayadd', function (e) {
-    if (e.name === "BPH Legend") {
+    if (e.name === "Soil BPH") {
       bphlegend.addTo(map);
     }
   });
 
   map.on('overlayremove', function (e) {
-    if (e.name === "BPH Legend") {
+    if (e.name === "Soil BPH") {
       map.removeControl(bphlegend);
     }
   });
@@ -141,7 +145,7 @@
   // Constrain map to raster extent
   map.setMaxBounds(rasterBounds);
   map.setMinZoom(9);
-  map.setMaxZoom(18);
+  map.setMaxZoom(14);
 </script>
 
 </body>
