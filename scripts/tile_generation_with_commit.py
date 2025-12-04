@@ -172,7 +172,7 @@ sm.set_array([])
 cbar = fig.colorbar(sm, cax=ax)
 cbar.set_label(legend_label, rotation=270, labelpad=15)
 
-ticks = np.linspace(data_min, data_max, 7)
+ticks = np.linspace(data_min, data_max, 8)
 cbar.set_ticks(ticks)
 tick_labels = [str(int(t)) for t in ticks[:-1]] + ["335"]
 cbar.set_ticklabels(tick_labels)
