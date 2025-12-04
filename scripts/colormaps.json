@@ -40,13 +40,11 @@
   },
   "CEC": {
     "colors": [
-      "#eef0ba",
-      "#dad6a4",
-      "#c6bc8f",
-      "#b2a37a",
-      "#9e8a66",
-      "#8b7252",
-      "#785a3e"
+      "#664c28",
+      "#a06819",
+      "#d9830a",
+      "#ffae00",
+      "#fff700"
     ],
     "label": "Cation Exchange Capacity",
     "step": 5
