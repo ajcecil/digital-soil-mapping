@@ -1,5 +1,4 @@
 import os
-import math
 import rasterio
 from rasterio.windows import from_bounds
 from rasterio.enums import Resampling
@@ -7,12 +6,13 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 from github import Github, Auth
+from matplotlib.colors import ListedColormap, BoundaryNorm
 
 # -----------------------------
 # GitHub Setup
 # -----------------------------
-GITHUB_TOKEN = "test Token"  # safer than username/password
-GITHUB_REPO = "ajcecil/agronomy_farms_soil_mapping"          # e.g. "alexj/mytiles"
+GITHUB_TOKEN = ""
+GITHUB_REPO = "ajcecil/digital-soil-mapping"
 
 auth = Auth.Token(GITHUB_TOKEN)
 g = Github(auth=auth)
@@ -36,8 +36,8 @@ def upload_to_github(local_path, git_path, message="committing file"):
 # -----------------------------
 # Tile Generation
 # -----------------------------
-tiff_path = r"main\products\maps\CEC\cec_sept_2025.tif"
-tiles_dir = r"main\html\tiles"
+tiff_path = r"data\properties\PH_prediction.tif"
+tiles_dir = r"github\digital-soil-mapping\docs\page_files\maps\PH\tiles"
 
 TILE_SIZE = 256
 zoom_levels = range(9, 19)
@@ -46,7 +46,26 @@ WEBMERC_MIN = -20037508.342789244
 WEBMERC_MAX = 20037508.342789244
 WEBMERC_SIZE = WEBMERC_MAX - WEBMERC_MIN
 
-cmap = plt.get_cmap("inferno")
+# cmap = plt.get_cmap("inferno")
+
+# ----- DEFINE VALUE RANGES -----
+bin_edges = [2.301, 4.393, 5.241, 6.090, 6.939, 7.787, 8.636, 10.6]   # 8 classes → 9 edges
+
+# ----- DEFINE COLORS (one per class) -----
+colors = [
+    "#5f87c1",  # Low
+    "#98adc6",
+    "#cad5ca",
+    "#f9fecc",
+    "#f9c697",
+    "#f08a64",
+    "#e04535"   # High
+]
+
+# Build discrete colormap + normalizer
+cmap = ListedColormap(colors)
+norm = BoundaryNorm(bin_edges, cmap.N)
+
 
 def mercator_tile_bounds(x, y, z):
     n = 2 ** z
@@ -108,7 +127,7 @@ with rasterio.open(tiff_path) as src:
                 img.save(file_path)
 
                 # Upload to GitHub
-                git_path = f"docs/page_files/maps/CEC/tiles/{z}/{x}/{y}.png"
+                git_path = f"docs/page_files/maps/PH/tiles/{z}/{x}/{y}.png"
                 upload_to_github(file_path, git_path)
 
 print("Tile generation + GitHub upload complete!")
@@ -117,7 +136,7 @@ print("Tile generation + GitHub upload complete!")
 # -----------------------------
 # Legend (also uploaded)
 # -----------------------------
-main_dir = r'main\html'
+main_dir = r'github\digital-soil-mapping\docs\page_files\maps\PH'
 legend_path = os.path.join(main_dir, "legend.png")
 
 fig, ax = plt.subplots(figsize=(2, 6))
@@ -139,4 +158,4 @@ plt.close(fig)
 print(f"Legend saved locally to {legend_path}")
 
 # Upload legend to GitHub
-upload_to_github(legend_path, "docs/page_files/maps/CEC/legend.png")
+upload_to_github(legend_path, "docs/page_files/maps/PH/legend.png")
