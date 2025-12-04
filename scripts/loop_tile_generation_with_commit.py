@@ -78,8 +78,6 @@ for PROPERTY in properties:
     cmap = ListedColormap(colors)
     norm = BoundaryNorm(bin_edges, cmap.N)
 
-
-    tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
     tiles_dir = fr"data\webpage\{PROPERTY}\tiles"
 
     TILE_SIZE = 256
