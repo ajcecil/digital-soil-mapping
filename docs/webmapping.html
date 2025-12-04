@@ -52,7 +52,7 @@
   );
 
   // Soil pH tile layer
-  const phLayer = L.tileLayer('page_files/maps/PH/tiles/{z}/{x}/{y}.png', {
+  const phLayer = L.tileLayer('maps/PH/tiles/{z}/{x}/{y}.png', {
     attribution: 'Soil pH Tiles',
     bounds: rasterBounds,
     noWrap: true,
@@ -60,7 +60,7 @@
   }).addTo(map);
 
   // Soil BPH tile layer
-  const bphLayer = L.tileLayer('page_files/maps/BPH/tiles/{z}/{x}/{y}.png', {
+  const bphLayer = L.tileLayer('maps/BPH/tiles/{z}/{x}/{y}.png', {
     attribution: 'Soil BPH Tiles',
     bounds: rasterBounds,
     noWrap: true,
@@ -80,14 +80,14 @@
   const phLegend = L.control({ position: 'bottomright' });
   phLegend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `<strong>Soil pH</strong><br><img src="page_files/maps/PH/legend.png" alt="pH Legend">`;
+    div.innerHTML = `<strong>Soil pH</strong><br><img src="maps/PH/legend.png" alt="pH Legend">`;
     return div;
   };
 
   const bphLegend = L.control({ position: 'bottomright' });
   bphLegend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `<strong>BPH</strong><br><img src="page_files/maps/BPH/legend.png" alt="BPH Legend">`;
+    div.innerHTML = `<strong>BPH</strong><br><img src="maps/BPH/legend.png" alt="BPH Legend">`;
     return div;
   };
 
