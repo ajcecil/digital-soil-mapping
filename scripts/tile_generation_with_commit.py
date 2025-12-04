@@ -81,7 +81,7 @@ tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
 tiles_dir = fr"data\webpage\{PROPERTY}\tiles"
 
 TILE_SIZE = 256
-zoom_levels = range(9, 14)
+zoom_levels = range(9, 15)
 
 WEBMERC_MIN = -20037508.342789244
 WEBMERC_MAX = 20037508.342789244
