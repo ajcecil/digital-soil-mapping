@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>GLSI Agronomy Farms</title>
+
+    <!-- link out to your CSS -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <header class="header">
+      <a href="index.html" class="header-logo-link">
+        <img src="page_files/glsi_logo.png" alt="logo" class="header-logo">
+      </a>
+      <h1>Soil Property Modeling</h1>
+    </header>
+    <nav class="menu-bar">
+      <ul class="menu">
+        <li class="dropdown">
+          <a href="mapviewer.html">Map Viewer</a>
+        </li>
+        <li class="dropdown">
+          <a href="https://agronomy-farms-soil-mapping.readthedocs.io/" target="_blank">Project Documentation</a>
+        </li>
+        <li class="dropdown">
+          <a href="#">Reference Material ▾</a>
+          <ul class="dropdown-menu">
+            <li><a href="https://agronomy-farms-soil-mapping.readthedocs.io/" target="_blank">Documentation</a></li>
+            <li><a href="https://www.agron.iastate.edu/glsi/" target="_blank">GLSI</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#">Data Sources ▾</a>
+          <ul class="dropdown-menu">
+            <li><a href="https://apps.nationalmap.gov/lidar-explorer/#/" target="_blank">USGS Lidar Explorer</a></li>
+            <li><a href="https://earthengine.google.com/" target="_blank">Google Earth Engine </a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#">Imagery and Data ▾</a>
+          <ul class="dropdown-menu">
+            <li><a href="https://iastate.box.com/s/ytjl7nqkroxs3haodak27xjpkaqpajh4" target="_blank">Soil Maps</a></li>
+          </ul>
+      </ul>
+    </nav>
+
+    <section id="overview"></section>
+    <div class="content">
+
+      <section id="general" class="section-text">
+        <h2>Project Overview</h2>
+        <p>
+          Test
+        </p>
+      </section>
+      
+      <section id="maps" class="section-text">
+        <h2>Soil Property Maps</h2>
+        <iframe src="webmapping.html" width="100%" height="600" style="border:none;"></iframe> 
+      </section>
+
+    </div>
+
+    <!-- tabs.js to wire up the tab buttons -->
+    <script>
+      document.querySelectorAll('.map-tabs .tab-btn')
+        .forEach(btn => {
+          btn.addEventListener('click', () => {
+            // deactivate all
+            document
+              .querySelectorAll('.map-tabs .tab-btn')
+              .forEach(b => b.classList.remove('active'));
+            document
+              .querySelectorAll('.map-tabs .tab-content')
+              .forEach(c => c.classList.remove('active'));
+
+            // activate the one we clicked
+            btn.classList.add('active');
+            document
+              .getElementById(btn.dataset.target)
+              .classList.add('active');
+          });
+        });
+    </script>
+    <script>
+      const header   = document.querySelector('.header');
+      const menuBar  = document.querySelector('.menu-bar');
+      let   lastScroll = window.pageYOffset;
+    
+      // on load: menu sits under the header
+      menuBar.classList.add('initial');
+    
+      window.addEventListener('scroll', () => {
+        const current = window.pageYOffset;
+    
+        if (current > lastScroll && current > header.offsetHeight) {
+          // scrolling DOWN past the header → hide header, pin menu to top
+          header.classList.add('hidden');
+          menuBar.classList.remove('initial');
+          menuBar.style.top = '0';
+        } else if (current < lastScroll) {
+          // scrolling UP → show header again, push menu back down
+          header.classList.remove('hidden');
+          menuBar.classList.add('initial');
+          menuBar.style.top = header.offsetHeight + 'px';
+        }
+    
+        lastScroll = current;
+      });
+    </script>    
+  </body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaflet GeoTIFF Tiles</title>
+
+  <!-- Shared CSS -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    /* Make map fill everything under the navbar */
+    body, html {
+      margin: 0;
+      height: 100%;
+    }
+
+    .menu-bar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;  /* keep it above the map */
+    }
+
+    #map {
+      position: absolute;
+      top: 40px;   /* adjust to match navbar height */
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    .leaflet-control-scale-line {
+      font-size: 16px;
+      line-height: 1.5;
+      padding: 4px 8px;
+    }
+
+    .legend {
+      line-height: 16px;
+      color: #555;
+      background: white;
+      padding: 8px;
+      border-radius: 5px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+    .legend img {
+      width: 100px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Just navbar -->
+  <nav class="menu-bar">
+    <ul class="menu">
+      <li class="dropdown"><a href="index.html">Home</a></li>
+      <li class="dropdown"><a href="https://agronomy-farms-soil-mapping.readthedocs.io/">Project Documentation</a></li>
+      <li class="dropdown">
+        <a href="#">Reference Material ▾</a>
+        <ul class="dropdown-menu">
+          <li><a href="https://agronomy-farms-soil-mapping.readthedocs.io/" target="_blank">Documentation</a></li>
+          <li><a href="https://www.agron.iastate.edu/glsi/" target="_blank">GLSI</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#">Data Sources ▾</a>
+        <ul class="dropdown-menu">
+          <li><a href="https://apps.nationalmap.gov/lidar-explorer/#/" target="_blank">USGS Lidar Explorer</a></li>
+          <li><a href="https://earthengine.google.com/" target="_blank">Google Earth Engine</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#">Imagery and Data ▾</a>
+        <ul class="dropdown-menu">
+          <li><a href="https://iastate.box.com/s/ytjl7nqkroxs3haodak27xjpkaqpajh4" target="_blank">Soil Maps</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Map container -->
+  <div id="map"></div>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    // Initialize map
+    const map = L.map('map').setView([41.99, -93.74], 12);
+
+    // Basemaps
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const sat = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    });
+
+    // Raster bounds
+    const southWest = L.latLng(41.8821460, -93.8336951);
+    const northEast = L.latLng(42.0996281, -93.6558287);
+    const rasterBounds = L.latLngBounds(southWest, northEast);
+
+    const BoundedTileLayer = L.TileLayer.extend({
+      createTile: function(coords, done) {
+        const tileBounds = this._tileCoordsToBounds(coords);
+        if (!rasterBounds.intersects(tileBounds)) {
+          const empty = document.createElement('div');
+          setTimeout(() => done(null, empty), 0);
+          return empty;
+        }
+        return L.TileLayer.prototype.createTile.call(this, coords, done);
+      }
+    });
+
+    // Add raster tiles
+    const phLayer = new BoundedTileLayer('page_files/maps/PH/tiles/{z}/{x}/{y}.png', {
+      attribution: 'pH Map Tiles',
+      opacity: 1,
+      noWrap: true
+    }).addTo(map);
+
+    // Layer control
+    L.control.layers(
+      { "OpenStreetMap": osm, "Satellite": sat },
+      { "Soil pH": phLayer }
+    ).addTo(map);
+
+    // Scale bar
+    L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
+
+    // Legend
+    const legend = L.control({position: 'bottomright'});
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      div.innerHTML = `
+        <strong>Soil pH</strong><br>
+        <img src="page_files/maps/PH/legend.png" alt="Legend">
+      `;
+      return div;
+    };
+    legend.addTo(map);
+
+    // Fit and constrain view
+    map.fitBounds(rasterBounds);
+    map.setMaxBounds(rasterBounds);
+    map.setMinZoom(9);
+    map.setMaxZoom(18);
+  </script>
+</body>
+</html>
