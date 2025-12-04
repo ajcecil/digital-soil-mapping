@@ -63,7 +63,7 @@ for PROPERTY in properties:
     step = cmap_config[PROPERTY].get("step", PROPERTY)
 
     # Open raster to compute data stats
-    tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
+    tiff_path = fr"data\webpage\originals\{PROPERTY}_prediction.tif"
     with rasterio.open(tiff_path) as src:
         data = src.read(1, masked=True)
 
