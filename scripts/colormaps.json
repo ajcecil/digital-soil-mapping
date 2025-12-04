@@ -25,13 +25,13 @@
   },
   "OM": {
     "colors": [
-      "#5f87c1",
-      "#98adc6",
-      "#cad5ca",
-      "#f9fecc",
-      "#f9c697",
-      "#f08a64",
-      "#e04535"
+      "#eef0ba",
+      "#dad6a4",
+      "#c6bc8f",
+      "#b2a37a",
+      "#9e8a66",
+      "#8b7252",
+      "#785a3e"
     ],
     "label": "Organic Matter"
   }

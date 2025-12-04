@@ -10,7 +10,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 import json
 
 #region  Property Assignment
-PROPERTY = "PH"
+PROPERTY = "BPH"
 #endregion
 
 #region GitHub Setup
