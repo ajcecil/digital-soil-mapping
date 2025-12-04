@@ -8,9 +8,9 @@
   <style>
     #map { height: 100vh; }
     .leaflet-control-scale-line {
-      font-size: 16px;
-      line-height: 1.5px;
-      padding: 4px 8px;
+        font-size: 16px;
+        line-height: 1.5px;
+        padding: 4px 8px;
     }
     .legend {
       line-height: 16px;
@@ -21,7 +21,7 @@
       box-shadow: 0 0 15px rgba(0,0,0,0.2);
     }
     .legend img {
-      width: 60px; /* adjust to your legend size */
+      width: 60px;  /* adjust to your legend size */
       display: block;
     }
   </style>
@@ -31,85 +31,119 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
   // Initialize map
   const map = L.map('map').setView([41.99, -93.74], 12);
 
-  // Basemaps
+  // Add basemap
   const sat = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics, Maxar, GeoEye, USDA FSA, USGS, AeroGRID, IGN, and the GIS User Community'
-    }).addTo(map);
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',  {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics, Maxar, GeoEye, USDA FSA, USGS, AeroGRID, IGN, and the GIS User Community'
+  }).addTo(map);
 
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   });
 
-  // Raster bounds
-  const rasterBounds = L.latLngBounds(
-    L.latLng(41.8821460, -93.8336951), // SW
-    L.latLng(42.0996281, -93.6558287)  // NE
-  );
+  
 
-  // Soil pH tile layer
-  const phLayer = L.tileLayer('maps/PH/tiles/{z}/{x}/{y}.png', {
-    attribution: 'Soil pH Tiles',
-    bounds: rasterBounds,
-    noWrap: true,
-    opacity: 1
+  // Define raster bounds
+  const southWest = L.latLng(41.8821460, -93.8336951);
+  const northEast = L.latLng(42.0996281, -93.6558287);
+  const rasterBounds = L.latLngBounds(southWest, northEast);
+
+  const BoundedTileLayer = L.TileLayer.extend({
+    createTile: function(coords, done) {
+      const tileBounds = this._tileCoordsToBounds(coords);
+      if (!rasterBounds.intersects(tileBounds)) {
+        const empty = document.createElement('div');
+        setTimeout(() => done(null, empty), 0);
+        return empty;
+      }
+      return L.TileLayer.prototype.createTile.call(this, coords, done);
+    }
+  });
+
+  // Add your raster tiles
+  const phLayer = new BoundedTileLayer('maps/PH/tiles/{z}/{x}/{y}.png', {
+    attribution: 'pH Map Tiles',
+    opacity: 1,
+    noWrap: true
   }).addTo(map);
 
-  // Soil BPH tile layer
-  const bphLayer = L.tileLayer('maps/BPH/tiles/{z}/{x}/{y}.png', {
-    attribution: 'Soil BPH Tiles',
-    bounds: rasterBounds,
-    noWrap: true,
-    opacity: 1
+  const bphLayer = new BoundedTileLayer('maps/BPH/tiles/{z}/{x}/{y}.png', {
+    attribution: 'BpH Tiles',
+    opacity: 1,
+    noWrap: true
   });
 
-  // Layer control
+  // Add layer control (shows name)
   L.control.layers(
-    { "Satellite": sat, "OpenStreetMap": osm },
-    { "Soil pH": phLayer, "Soil BPH": bphLayer }
+    { "Satellite": sat, "OpenStreetMap": osm },  // basemaps
+    { "Soil pH": phLayer, "Soil BPH": bphLayer}     // overlays
   ).addTo(map);
 
-  // Scale bar
+  // Add scale bar
   L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
 
-  // Legends
-  const phLegend = L.control({ position: 'bottomright' });
-  phLegend.onAdd = function () {
+  // Add legend (custom control)
+  const legend = L.control({ position: 'bottomright' });
+  legend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `<strong>Soil pH</strong><br><img src="maps/PH/legend.png" alt="pH Legend">`;
+    div.innerHTML = `
+      <strong>Soil pH</strong><br>
+      <img src="page_files/maps/PH/legend.png" alt="BPH Legend">
+    `;
     return div;
   };
+  legend.addTo(map)
+  // Show legend only when Soil pH layer is active
+  map.on('overlayadd', function (e) {
+    if (e.name === "Soil pH") {
+      legend.addTo(map);
+    }
+  });
 
-  const bphLegend = L.control({ position: 'bottomright' });
-  bphLegend.onAdd = function () {
+  map.on('overlayremove', function (e) {
+    if (e.name === "Soil pH") {
+      map.removeControl(legend);
+    }
+  });
+
+
+  const testlegend = L.control({ position: 'bottomright' });
+  bphlegend.onAdd = function () {
     const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `<strong>BPH</strong><br><img src="maps/BPH/legend.png" alt="BPH Legend">`;
+    div.innerHTML = `
+      <strong>BPH</strong><br>
+      <img src="page_files/maps/BPH/legend.png" alt="BPH Legend">
+    `;
     return div;
   };
-
-  // Show/hide legends when overlay is toggled
-  map.on('overlayadd', function(e) {
-    if (e.name === "Soil pH") phLegend.addTo(map);
-    if (e.name === "Soil BPH") bphLegend.addTo(map);
+  // Show legend only when Soil pH layer is active
+  map.on('overlayadd', function (e) {
+    if (e.name === "BPH Legend") {
+      bphlegend.addTo(map);
+    }
   });
 
-  map.on('overlayremove', function(e) {
-    if (e.name === "Soil pH") map.removeControl(phLegend);
-    if (e.name === "Soil BPH") map.removeControl(bphLegend);
+  map.on('overlayremove', function (e) {
+    if (e.name === "BPH Legend") {
+      map.removeControl(bphlegend);
+    }
   });
+  
 
-  // Fit map to raster bounds and constrain panning/zoom
+  // Fit map view to raster
   map.fitBounds(rasterBounds);
+
+  // Constrain map to raster extent
   map.setMaxBounds(rasterBounds);
-  map.setMinZoom(10);
-  map.setMaxZoom(14);
+  map.setMinZoom(9);
+  map.setMaxZoom(18);
 </script>
 
 </body>
 </html>
-
 
