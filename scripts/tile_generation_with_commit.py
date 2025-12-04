@@ -77,10 +77,10 @@ norm = BoundaryNorm(bin_edges, cmap.N)
 
 
 tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
-tiles_dir = fr"github\digital-soil-mapping\docs\page_files\maps\{PROPERTY}\tiles"
+tiles_dir = fr"data\webpage\{PROPERTY}\tiles"
 
 TILE_SIZE = 256
-zoom_levels = range(9, 16)
+zoom_levels = range(9, 15)
 
 WEBMERC_MIN = -20037508.342789244
 WEBMERC_MAX = 20037508.342789244
