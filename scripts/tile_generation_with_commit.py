@@ -165,7 +165,7 @@ legend_path = os.path.join(main_dir, "legend.png")
 
 fig, ax = plt.subplots(figsize=(2, 6))
 fig.subplots_adjust(right=0.5)
-norm = plt.Normalize(vmin=data_min, vmax=335)
+norm = plt.Normalize(vmin=data_min, vmax=data_max)
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 sm.set_array([])
 
