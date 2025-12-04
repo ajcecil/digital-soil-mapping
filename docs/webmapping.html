@@ -72,7 +72,7 @@
     noWrap: true
   }).addTo(map);
 
-  const auto_phLayer = new BoundedTileLayer('page_files/maps/BPH/tiles/{z}/{x}/{y}.png', {
+  const bphLayer = new BoundedTileLayer('page_files/maps/BPH/tiles/{z}/{x}/{y}.png', {
     attribution: 'BpH Tiles',
     opacity: 1,
     noWrap: true
@@ -140,8 +140,8 @@
 
   // Constrain map to raster extent
   map.setMaxBounds(rasterBounds);
-  map.setMinZoom(9);
-  map.setMaxZoom(18);
+  map.setMinZoom(10);
+  map.setMaxZoom(14);
 </script>
 
 </body>

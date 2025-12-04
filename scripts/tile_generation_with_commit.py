@@ -10,7 +10,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 import json
 
 #region  Property Assignment
-PROPERTY = "PH"
+PROPERTY = "BPH"
 #endregion
 
 #region GitHub Setup
@@ -80,7 +80,7 @@ tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
 tiles_dir = fr"data\webpage\{PROPERTY}\tiles"
 
 TILE_SIZE = 256
-zoom_levels = range(9, 15)
+zoom_levels = range(9, 14)
 
 WEBMERC_MIN = -20037508.342789244
 WEBMERC_MAX = 20037508.342789244
@@ -132,12 +132,10 @@ with rasterio.open(tiff_path) as src:
                     resampling=Resampling.bilinear
                 )
 
-                # Clip + normalize
+                # Clip
                 tile_array_clipped = np.clip(tile_array, None, 335)
-                norm = (tile_array_clipped - data_min) / (335 - data_min)
-                norm = np.clip(norm, 0, 1)
 
-                rgba = (cmap(norm) * 255).astype(np.uint8)
+                rgba = (cmap(norm(tile_array)) * 255).astype(np.uint8)
 
                 if src.nodata is not None:
                     mask = tile_array == src.nodata
@@ -162,7 +160,7 @@ print("Tile generation + GitHub upload complete!")
 
 #region Legend Build
 
-main_dir = rf'github\digital-soil-mapping\docs\page_files\maps\{PROPERTY}'
+main_dir = rf'data\webpage\{PROPERTY}'
 legend_path = os.path.join(main_dir, "legend.png")
 
 fig, ax = plt.subplots(figsize=(2, 6))
