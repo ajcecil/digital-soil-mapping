@@ -9,7 +9,8 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "pH"
+    "label": "pH",
+    "step": 7
   },
   "BPH": {
     "colors": [
@@ -21,7 +22,8 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "BpH"
+    "label": "BpH",
+    "step": 7
   },
   "OM": {
     "colors": [
@@ -33,6 +35,20 @@
       "#8b7252",
       "#785a3e"
     ],
-    "label": "Organic Matter"
+    "label": "Organic Matter",
+    "step": 7
+  },
+  "CEC": {
+    "colors": [
+      "#eef0ba",
+      "#dad6a4",
+      "#c6bc8f",
+      "#b2a37a",
+      "#9e8a66",
+      "#8b7252",
+      "#785a3e"
+    ],
+    "label": "Cation Exchange Capacity",
+    "step": 5
   }
 }

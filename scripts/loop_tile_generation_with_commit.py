@@ -8,6 +8,12 @@ import matplotlib.pyplot as plt
 from github import Github, Auth
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import json
+import math
+
+
+
+properties = ["PH", "BPH", "OM"]
+
 
 #region  Property Assignment
 PROPERTY = "BPH"
@@ -58,7 +64,7 @@ if PROPERTY not in cmap_config:
 
 colors = cmap_config[PROPERTY]["colors"]
 legend_label = cmap_config[PROPERTY].get("label", PROPERTY)
-max_tick = cmap_config[PROPERTY].get("max_tick", PROPERTY)
+step = cmap_config[PROPERTY].get("step", PROPERTY)
 
 # Open raster to compute data stats
 tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
@@ -70,7 +76,7 @@ data_mean = np.mean(data)
 data_std = np.std(data)
 
 # Generate 7 categories based on ±3 standard deviations
-bin_edges = [data_mean + i * data_std for i in range(-3, 4)]
+bin_edges = [data_mean + i * data_std for i in range(math.ceil((-1)*step/2), math.ceil(step/2))]
 
 # Build discrete colormap + normalizer
 cmap = ListedColormap(colors)
@@ -188,7 +194,7 @@ sm.set_array([])
 cbar = fig.colorbar(sm, cax=ax)
 cbar.set_label(legend_label, rotation=270, labelpad=15)
 
-ticks = np.linspace(data_min, data_max, 8)
+ticks = np.linspace(data_min, data_max, (step + 1))
 cbar.set_ticks(ticks)
 tick_labels = [str(int(t)) for t in ticks]
 cbar.set_ticklabels(tick_labels)
