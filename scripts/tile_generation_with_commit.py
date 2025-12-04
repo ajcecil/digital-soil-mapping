@@ -175,7 +175,7 @@ cbar.set_label(legend_label, rotation=270, labelpad=15)
 
 ticks = np.linspace(data_min, data_max, 8)
 cbar.set_ticks(ticks)
-tick_labels = [str(int(t)) for t in ticks[:-1]] + ["335"]
+tick_labels = [str(int(t)) for t in ticks]
 cbar.set_ticklabels(tick_labels)
 
 fig.savefig(legend_path, dpi=150, bbox_inches='tight')

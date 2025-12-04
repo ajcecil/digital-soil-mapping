@@ -9,8 +9,7 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "pH",
-    "max_tick": 14
+    "label": "pH"
   },
   "BPH": {
     "colors": [
@@ -22,8 +21,7 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "BpH",
-    "max_tick": 14
+    "label": "BpH"
   },
   "OM": {
     "colors": [
@@ -35,7 +33,6 @@
       "#f08a64",
       "#e04535"
     ],
-    "label": "Organic Matter",
-    "max_tick": 14
+    "label": "Organic Matter"
   }
 }
