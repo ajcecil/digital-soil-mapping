@@ -58,6 +58,7 @@ if PROPERTY not in cmap_config:
 
 colors = cmap_config[PROPERTY]["colors"]
 legend_label = cmap_config[PROPERTY].get("label", PROPERTY)
+max_tick = cmap_config[PROPERTY].get("max_tick", PROPERTY)
 
 # Open raster to compute data stats
 tiff_path = fr"data\properties\{PROPERTY}_prediction.tif"
