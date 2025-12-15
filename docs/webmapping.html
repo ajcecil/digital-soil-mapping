@@ -71,7 +71,7 @@
     opacity: 1,
     noWrap: true,
     minZoom: 9,
-    maxZoom: 14      // ← must match what Python actually generated
+    maxZoom: 18      // ← must match what Python actually generated
   }).addTo(map);
 
   const bphLayer = new BoundedTileLayer('page_files/maps/BPH/tiles/{z}/{x}/{y}.png', {
@@ -79,13 +79,29 @@
     opacity: 1,
     noWrap: true,
     minZoom: 9,
-    maxZoom: 14
+    maxZoom: 18
+  });
+
+  const omLayer = new BoundedTileLayer('page_files/maps/OM/tiles/{z}/{x}/{y}.png', {
+    attribution: 'OM Tiles',
+    opacity: 1,
+    noWrap: true,
+    minZoom: 9,
+    maxZoom: 18
+  });
+
+  const cecLayer = new BoundedTileLayer('page_files/maps/CEC/tiles/{z}/{x}/{y}.png', {
+    attribution: 'OM Tiles',
+    opacity: 1,
+    noWrap: true,
+    minZoom: 9,
+    maxZoom: 18
   });
 
   // Add layer control (shows name)
   L.control.layers(
     { "Satellite": sat, "OpenStreetMap": osm },  // basemaps
-    { "Soil pH": phLayer, "Soil BPH": bphLayer}     // overlays
+    { "Soil pH": phLayer, "Soil BPH": bphLayer, "Organic Matter": omLayer, "CEC": cecLayer}     // overlays
   ).addTo(map);
 
   // Add scale bar
@@ -138,6 +154,50 @@
     }
   });
   
+  const omlegend = L.control({ position: 'bottomright' });
+  bphlegend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = `
+      <strong>BPH</strong><br>
+      <img src="page_files/maps/OM/legend.png" alt="BPH Legend">
+    `;
+    return div;
+  };
+  // Show legend only when Soil pH layer is active
+  map.on('overlayadd', function (e) {
+    if (e.name === "Organic Matter") {
+      omlegend.addTo(map);
+    }
+  });
+
+  map.on('overlayremove', function (e) {
+    if (e.name === "Organic Matter") {
+      map.removeControl(omlegend);
+    }
+  });
+
+  const ceclegend = L.control({ position: 'bottomright' });
+  bphlegend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = `
+      <strong>BPH</strong><br>
+      <img src="page_files/maps/CEC/legend.png" alt="BPH Legend">
+    `;
+    return div;
+  };
+  // Show legend only when Soil pH layer is active
+  map.on('overlayadd', function (e) {
+    if (e.name === "CEC") {
+      ceclegend.addTo(map);
+    }
+  });
+
+  map.on('overlayremove', function (e) {
+    if (e.name === "CEC") {
+      map.removeControl(ceclegend);
+    }
+  });
+
 
   // Fit map view to raster
   map.fitBounds(rasterBounds);
