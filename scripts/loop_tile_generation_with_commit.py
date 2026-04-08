@@ -12,7 +12,8 @@ import math
 
 
 
-properties = ["PH", "BPH", "OM", "CEC"]
+properties = ['CEC', 'OM']
+
 
 for PROPERTY in properties:
     #region GitHub Setup
@@ -63,7 +64,8 @@ for PROPERTY in properties:
     step = cmap_config[PROPERTY].get("step", PROPERTY)
 
     # Open raster to compute data stats
-    tiff_path = fr"data\webpage\originals\{PROPERTY}_prediction.tif"
+    
+    tiff_path = fr"+feature_select_maps_march_gen\{PROPERTY}_prediction_full.tif"
     with rasterio.open(tiff_path) as src:
         data = src.read(1, masked=True)
 
