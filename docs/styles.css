@@ -149,7 +149,15 @@ html, body {
     min-height: 400px;
     margin: 0 auto;      /* centers it in the flex container */
   }
-  
+
+  h1{
+    text-align: center;
+  }
+
+  h2{
+    text-align: center;
+  }
+
   /* basic section text styling (all white here) */
   .section-text {
     color: #000000;
