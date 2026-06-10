@@ -218,14 +218,13 @@ html, body {
   .menu-bar {
     position: fixed;
     top:    0;    /* pin to top when header is hidden */
-    left:   0;
-    right:  0;
     height: 50px;    /* whatever your menu height is */
     background: #f5f5f5;
     padding: 0 20px;
     box-sizing: border-box;
     z-index: 1000;
-    align-content: right;
+    align-items: right;
+
   }
   .menu-bar.initial {
     top: 100px;
