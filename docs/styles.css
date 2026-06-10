@@ -218,7 +218,7 @@ html, body {
     right: 0;              /* anchor bar to right side */
     width: 100%;           /* keep it full width */
     height: 50px;
-    background: #C8102E;
+    background: #f5f5f5;
     padding: 0 20px;
     box-sizing: border-box;
     z-index: 1000;
@@ -247,10 +247,10 @@ html, body {
   }
 
   .menu a {
-    color: #ffffff;
+    color: #C8102E;
     text-decoration: none;
     font-family: Arial, sans-serif; /* Arial */
-    font-size: 40px;
+    font-size: 25px;
     font-weight: 700;               /* bold */
     line-height: 50px;
     display: block;
