@@ -276,6 +276,7 @@ html, body {
   .dropdown-menu li a {
     color: #000000;
     font-family: Arial, sans-serif;
+    font-size: large;
     font-weight: 700;
     padding: 0.5em 1em;
     white-space: nowrap;
