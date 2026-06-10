@@ -217,18 +217,23 @@ html, body {
   /* ─── Menu Bar ───────────────────────── */
   .menu-bar {
     position: fixed;
-    top:    0;    /* pin to top when header is hidden */
-    height: 50px;    /* whatever your menu height is */
+    top: 0;
+    right: 0;              /* anchor bar to right side */
+    width: 100%;           /* keep it full width */
+    height: 50px;
     background: #f5f5f5;
     padding: 0 20px;
     box-sizing: border-box;
     z-index: 1000;
-    align-items: right;
-
+    display: flex;         /* needed for alignment */
+    justify-content: flex-end; /* push menu to the right */
+    align-items: center;
   }
+
   .menu-bar.initial {
     top: 100px;
   }
+
   .menu {
     list-style: none;
     margin: 0;
@@ -237,20 +242,24 @@ html, body {
     gap: 1.5em;
     align-items: center;
     height: 50px;
+    justify-content: flex-end;
   }
+
   .menu > li {
     position: relative;
   }
+
   .menu a {
     color: #C8102E;
     text-decoration: none;
-    font-weight: bold;
+    font-family: Arial, sans-serif; /* Arial */
+    font-weight: 700;               /* bold */
     line-height: 50px;
     display: block;
     padding: 0 0.5em;
   }
-  
-  /* Dropdown container hidden by default */
+
+  /* Dropdown hidden by default */
   .dropdown-menu {
     display: none;
     position: absolute;
@@ -263,17 +272,20 @@ html, body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     z-index: 2000;
   }
+
   .dropdown-menu li a {
     color: #000000;
+    font-family: Arial, sans-serif;
+    font-weight: 700;
     padding: 0.5em 1em;
     white-space: nowrap;
   }
+
   .dropdown-menu li a:hover {
     background: #8d8d8d;
     color: #ffffff;
   }
-  
-  /* Show dropdown on hover */
+
   .dropdown:hover .dropdown-menu {
     display: block;
   }
