@@ -22,7 +22,7 @@ html, body {
   }
   .sidebar.left  { left: 0; }
   
-  
+
   /* vertical nav in left sidebar */
   .sidebar.left nav {
     display: flex;
@@ -109,6 +109,20 @@ html, body {
     width: auto;
     margin: 0 0 1em 1em;
   }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .two-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .pit-image {
     float: right;
     height: auto;
