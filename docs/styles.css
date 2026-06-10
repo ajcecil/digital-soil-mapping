@@ -110,6 +110,13 @@ html, body {
     margin: 0 0 1em 1em;
   }
 
+  .main-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
   .two-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
