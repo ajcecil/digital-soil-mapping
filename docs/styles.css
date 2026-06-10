@@ -150,11 +150,8 @@ html, body {
     margin: 0 auto;      /* centers it in the flex container */
   }
 
-  h1{
-    text-align: center;
-  }
 
-  h2{
+  .middle-column{
     text-align: center;
   }
 
