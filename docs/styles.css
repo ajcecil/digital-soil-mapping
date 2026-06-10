@@ -196,8 +196,8 @@ html, body {
     font-weight: bold;
   }
   .map-tabs .tab-btn.active {
-    background: #c8102e;
-    color: #ffffff;
+    background: #ffffff;
+    color: #C8102E;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   }
   .map-tabs .tab-btn:hover {
