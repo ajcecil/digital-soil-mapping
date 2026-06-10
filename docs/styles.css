@@ -22,6 +22,7 @@ html, body {
   }
   .sidebar.left  { left: 0; }
   
+  
   /* vertical nav in left sidebar */
   .sidebar.left nav {
     display: flex;
