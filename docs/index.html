@@ -154,5 +154,32 @@
         lastScroll = current;
       });
     </script>    
+
+
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+    <script>
+      const md = window.markdownit();
+
+      async function loadMarkdown() {
+        const blocks = document.querySelectorAll('.md-content[data-md]');
+
+        for (const block of blocks) {
+          const file = block.dataset.md;
+
+          try {
+            const res = await fetch(file);
+            if (!res.ok) throw new Error(`Failed to load ${file}`);
+            const text = await res.text();
+            block.innerHTML = md.render(text);
+          } catch (err) {
+            block.innerHTML = `<p>Could not load content from ${file}</p>`;
+            console.error(err);
+          }
+        }
+      }
+
+      loadMarkdown();
+    </script>
+
   </body>
 </html>
