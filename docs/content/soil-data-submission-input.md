@@ -2,9 +2,9 @@
 
 Next steps:
 1. Plan for content
-2. Test fitment and linking of markdown content
-3. Check out different formatting and structure.
-
+1. Test fitment and linking of markdown content
+1. Check out different formatting and structure.
+1. fourth item
 
 - Bullet 1
 - Bullet 2
