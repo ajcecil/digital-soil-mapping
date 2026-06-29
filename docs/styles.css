@@ -3,13 +3,17 @@ html, body {
     height: 100%;
     margin: 0;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(245, 245, 245, 0.25) transparent;
+    
   }
   
   /* full-page background */
   body {
     background-color: #ffffff;
+  }
+  
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 245, 245, 0.25) transparent;
   }
 
   /* Chrome, Edge, Safari */
