@@ -10,20 +10,6 @@ html, body {
   body {
     background-color: #ffffff;
   }
-  
-  html {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(245, 245, 245, 0.25) transparent;
-  }
-
-  /* Chrome, Edge, Safari */
-  ::-webkit-scrollbar {
-    width: 10px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
 
   ::-webkit-scrollbar-thumb {
     background-color: rgba(245, 245, 245, 0.25);
