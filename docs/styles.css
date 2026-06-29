@@ -3,13 +3,34 @@ html, body {
     height: 100%;
     margin: 0;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 245, 245, 0.25) transparent;
   }
   
   /* full-page background */
   body {
     background-color: #ffffff;
   }
-  
+
+  /* Chrome, Edge, Safari */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(245, 245, 245, 0.25);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(245, 245, 245, 0.45);
+  }
+
+
   /* fixed left & right sidebars */
   .sidebar {
     position: fixed;
