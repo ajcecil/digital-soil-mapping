@@ -99,11 +99,10 @@
 
       // 3. Moved scroll logic into a function called after injection
       function initializeScrollEffects() {
-        const header   = document.querySelector('.header');
         const bottombar  = document.querySelector('.bottom-bar');
         
         // Guard clause in case elements are missing
-        if (!header || !bottombar) return;
+        if (!bottombar) return;
 
         let lastScroll = window.pageYOffset;
       
@@ -112,18 +111,6 @@
       
         window.addEventListener('scroll', () => {
           const current = window.pageYOffset;
-      
-          if (current > lastScroll && current > header.offsetHeight) {
-            // scrolling DOWN past the header → hide header, pin menu to top
-            header.classList.add('hidden');
-            bottombar.classList.remove('initial');
-            bottombar.style.top = '0';
-          } else if (current < lastScroll) {
-            // scrolling UP → show header again, push menu back down
-            header.classList.remove('hidden');
-            bottombar.classList.add('initial');
-            bottombar.style.top = header.offsetHeight + 'px';
-          }
       
           lastScroll = current;
         });
