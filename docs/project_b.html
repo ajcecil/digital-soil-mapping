@@ -8,9 +8,11 @@
     </head>
 
   <body>
+    <!-- This will hold both your header and menu-bar loaded from menu.html -->
     <div id="site-menu"></div>
 
     <script>
+      // 1. Fetch and inject the menu
       fetch('menu.html')
         .then(response => {
           if (!response.ok) {
@@ -20,10 +22,45 @@
         })
         .then(data => {
           document.getElementById('site-menu').innerHTML = data;
+          
+          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
+          initializeScrollEffects();
         })
         .catch(error => {
           console.error('Menu failed to load:', error);
         });
+
+      // 3. Moved scroll logic into a function called after injection
+      function initializeScrollEffects() {
+        const header   = document.querySelector('.header');
+        const menuBar  = document.querySelector('.menu-bar');
+        
+        // Guard clause in case elements are missing
+        if (!header || !menuBar) return;
+
+        let lastScroll = window.pageYOffset;
+      
+        // on load: menu sits under the header
+        menuBar.classList.add('initial');
+      
+        window.addEventListener('scroll', () => {
+          const current = window.pageYOffset;
+      
+          if (current > lastScroll && current > header.offsetHeight) {
+            // scrolling DOWN past the header → hide header, pin menu to top
+            header.classList.add('hidden');
+            menuBar.classList.remove('initial');
+            menuBar.style.top = '0';
+          } else if (current < lastScroll) {
+            // scrolling UP → show header again, push menu back down
+            header.classList.remove('hidden');
+            menuBar.classList.add('initial');
+            menuBar.style.top = header.offsetHeight + 'px';
+          }
+      
+          lastScroll = current;
+        });
+      }
     </script>
 
     <section id="overview"></section>
@@ -54,7 +91,6 @@
       document.querySelectorAll('.map-tabs .tab-btn')
         .forEach(btn => {
           btn.addEventListener('click', () => {
-            // deactivate all
             document
               .querySelectorAll('.map-tabs .tab-btn')
               .forEach(b => b.classList.remove('active'));
@@ -62,7 +98,6 @@
               .querySelectorAll('.map-tabs .tab-content')
               .forEach(c => c.classList.remove('active'));
 
-            // activate the one we clicked
             btn.classList.add('active');
             document
               .getElementById(btn.dataset.target)
@@ -70,33 +105,6 @@
           });
         });
     </script>
-    <script>
-      const header   = document.querySelector('.header');
-      const menuBar  = document.querySelector('.menu-bar');
-      let   lastScroll = window.pageYOffset;
-    
-      // on load: menu sits under the header
-      menuBar.classList.add('initial');
-    
-      window.addEventListener('scroll', () => {
-        const current = window.pageYOffset;
-    
-        if (current > lastScroll && current > header.offsetHeight) {
-          // scrolling DOWN past the header → hide header, pin menu to top
-          header.classList.add('hidden');
-          menuBar.classList.remove('initial');
-          menuBar.style.top = '0';
-        } else if (current < lastScroll) {
-          // scrolling UP → show header again, push menu back down
-          header.classList.remove('hidden');
-          menuBar.classList.add('initial');
-          menuBar.style.top = header.offsetHeight + 'px';
-        }
-    
-        lastScroll = current;
-      });
-    </script>    
-
 
     <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
     <script>
