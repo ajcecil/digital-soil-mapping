@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>project_c</title>
+    </head>
+
+  <body>
+    <!-- This will hold both your header and menu-bar loaded from menu.html -->
+    <div id="site-menu"></div>
+
+    <script>
+      // 1. Fetch and inject the menu
+      fetch('menu.html')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(data => {
+          document.getElementById('site-menu').innerHTML = data;
+          
+          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
+          initializeScrollEffects();
+        })
+        .catch(error => {
+          console.error('Menu failed to load:', error);
+        });
+
+      // 3. Moved scroll logic into a function called after injection
+      function initializeScrollEffects() {
+        const header   = document.querySelector('.header');
+        const menuBar  = document.querySelector('.menu-bar');
+        
+        // Guard clause in case elements are missing
+        if (!header || !menuBar) return;
+
+        let lastScroll = window.pageYOffset;
+      
+        // on load: menu sits under the header
+        menuBar.classList.add('initial');
+      
+        window.addEventListener('scroll', () => {
+          const current = window.pageYOffset;
+      
+          if (current > lastScroll && current > header.offsetHeight) {
+            // scrolling DOWN past the header → hide header, pin menu to top
+            header.classList.add('hidden');
+            menuBar.classList.remove('initial');
+            menuBar.style.top = '0';
+          } else if (current < lastScroll) {
+            // scrolling UP → show header again, push menu back down
+            header.classList.remove('hidden');
+            menuBar.classList.add('initial');
+            menuBar.style.top = header.offsetHeight + 'px';
+          }
+      
+          lastScroll = current;
+        });
+      }
+    </script>
+
+    <section id="overview"></section>
+
+    
+    <div class="content">
+
+      <section id="general" class="section-text">
+        <h2>Project C Overview</h2>
+        <p>
+          Overview of Project C.
+          <li>target 1</li>
+          <li>target 2</li>
+        </p>
+      </section>
+      
+
+    </div>
+
+    <section class="bottom-bar">
+
+      <h3>Contact</h3>
+
+    </section>
+
+    <!-- tabs.js to wire up the tab buttons -->
+    <script>
+      document.querySelectorAll('.map-tabs .tab-btn')
+        .forEach(btn => {
+          btn.addEventListener('click', () => {
+            document
+              .querySelectorAll('.map-tabs .tab-btn')
+              .forEach(b => b.classList.remove('active'));
+            document
+              .querySelectorAll('.map-tabs .tab-content')
+              .forEach(c => c.classList.remove('active'));
+
+            btn.classList.add('active');
+            document
+              .getElementById(btn.dataset.target)
+              .classList.add('active');
+          });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+    <script>
+      const md = window.markdownit();
+
+      async function loadMarkdown() {
+        const blocks = document.querySelectorAll('.md-content[data-md]');
+
+        for (const block of blocks) {
+          const file = block.dataset.md;
+
+          try {
+            const res = await fetch(file);
+            if (!res.ok) throw new Error(`Failed to load ${file}`);
+            const text = await res.text();
+            block.innerHTML = md.render(text);
+          } catch (err) {
+            block.innerHTML = `<p>Could not load content from ${file}</p>`;
+            console.error(err);
+          }
+        }
+      }
+
+      loadMarkdown();
+    </script>
+
+  </body>
+</html>
