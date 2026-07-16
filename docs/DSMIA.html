@@ -33,15 +33,15 @@
       // 3. Moved scroll logic into a function called after injection
       function initializeScrollEffects() {
         const header   = document.querySelector('.header');
-        const menuBar  = document.querySelector('.menu-bar');
+        const bottombar  = document.querySelector('.bottom-bar');
         
         // Guard clause in case elements are missing
-        if (!header || !menuBar) return;
+        if (!header || !bottombar) return;
 
         let lastScroll = window.pageYOffset;
       
         // on load: menu sits under the header
-        menuBar.classList.add('initial');
+        bottombar.classList.add('initial');
       
         window.addEventListener('scroll', () => {
           const current = window.pageYOffset;
@@ -49,13 +49,13 @@
           if (current > lastScroll && current > header.offsetHeight) {
             // scrolling DOWN past the header → hide header, pin menu to top
             header.classList.add('hidden');
-            menuBar.classList.remove('initial');
-            menuBar.style.top = '0';
+            bottombar.classList.remove('initial');
+            bottombar.style.top = '0';
           } else if (current < lastScroll) {
             // scrolling UP → show header again, push menu back down
             header.classList.remove('hidden');
-            menuBar.classList.add('initial');
-            menuBar.style.top = header.offsetHeight + 'px';
+            bottombar.classList.add('initial');
+            bottombar.style.top = header.offsetHeight + 'px';
           }
       
           lastScroll = current;
@@ -108,11 +108,57 @@
 
     </div>
 
-    <section class="bottom-bar">
+    <script>
+      // 1. Fetch and inject the menu
+      fetch('bottom_bar.html')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(data => {
+          document.getElementById('site-menu').innerHTML = data;
+          
+          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
+          initializeScrollEffects();
+        })
+        .catch(error => {
+          console.error('Menu failed to load:', error);
+        });
 
-      <h3>Contact</h3>
+      // 3. Moved scroll logic into a function called after injection
+      function initializeScrollEffects() {
+        const header   = document.querySelector('.header');
+        const bottombar  = document.querySelector('.bottom-bar');
+        
+        // Guard clause in case elements are missing
+        if (!header || !bottombar) return;
 
-    </section>
+        let lastScroll = window.pageYOffset;
+      
+        // on load: menu sits under the header
+        bottombar.classList.add('initial');
+      
+        window.addEventListener('scroll', () => {
+          const current = window.pageYOffset;
+      
+          if (current > lastScroll && current > header.offsetHeight) {
+            // scrolling DOWN past the header → hide header, pin menu to top
+            header.classList.add('hidden');
+            bottombar.classList.remove('initial');
+            bottombar.style.top = '0';
+          } else if (current < lastScroll) {
+            // scrolling UP → show header again, push menu back down
+            header.classList.remove('hidden');
+            bottombar.classList.add('initial');
+            bottombar.style.top = header.offsetHeight + 'px';
+          }
+      
+          lastScroll = current;
+        });
+      }
+    </script>
 
     <!-- tabs.js to wire up the tab buttons -->
     <script>
