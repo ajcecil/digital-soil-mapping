@@ -109,42 +109,7 @@
     </div>
 
     <script>
-      // 1. Fetch and inject the menu
       fetch('bottom_bar.html')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(data => {
-          document.getElementById('site-menu').innerHTML = data;
-          
-          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
-          initializeScrollEffects();
-        })
-        .catch(error => {
-          console.error('Menu failed to load:', error);
-        });
-
-      // 3. Moved scroll logic into a function called after injection
-      function initializeScrollEffects() {
-        const bottombar  = document.querySelector('.bottom-bar');
-        
-        // Guard clause in case elements are missing
-        if (!bottombar) return;
-
-        let lastScroll = window.pageYOffset;
-      
-        // on load: menu sits under the header
-        bottombar.classList.add('initial');
-      
-        window.addEventListener('scroll', () => {
-          const current = window.pageYOffset;
-      
-          lastScroll = current;
-        });
-      }
     </script>
 
     <!-- tabs.js to wire up the tab buttons -->
