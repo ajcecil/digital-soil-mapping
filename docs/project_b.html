@@ -11,10 +11,18 @@
     <div id="site-menu"></div>
 
     <script>
-      fetch('menu.html')
-        .then(response => response.text())
+      fetch('nav_bar_menu.html')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          return response.text();
+        })
         .then(data => {
           document.getElementById('site-menu').innerHTML = data;
+        })
+        .catch(error => {
+          console.error('Menu failed to load:', error);
         });
     </script>
 
