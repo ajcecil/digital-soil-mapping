@@ -228,7 +228,8 @@ html, body {
   /* ─── Menu Bar ───────────────────────── */
   .menu-bar {
     position: fixed;
-    top: 0;          /* anchor bar to left side */
+    top: 0;
+    right: 0;              /* anchor bar to right side */
     width: 100%;           /* keep it full width */
     height: 50px;
     background: #C8102E;
@@ -236,7 +237,7 @@ html, body {
     box-sizing: border-box;
     z-index: 1000;
     display: flex;         /* needed for alignment */
-    justify-content: flex-end; /* push menu to the right */
+    justify-content: flex-start; /* push menu to the left */
     align-items: center;
   }
 
