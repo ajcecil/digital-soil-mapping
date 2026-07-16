@@ -78,8 +78,14 @@
       </section>
     </div>
 
+    <div id="bottom-bar"></div>
     <script>
       fetch('bottom_bar.html')
+        .then(r => r.text())
+        .then(html => {
+          document.getElementById('bottom-bar').innerHTML = html;
+        })
+        .catch(err => console.error('Bottom bar load failed:', err));
     </script>
 
     <!-- tabs.js to wire up the tab buttons -->
