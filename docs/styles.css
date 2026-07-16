@@ -300,6 +300,10 @@ html, body {
     display: block;
   }
 
+  #site-menu {
+    border: 2px solid lime;
+  }
+
   #om {
     color: #000000
   }
