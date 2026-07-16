@@ -229,7 +229,7 @@ html, body {
   .menu-bar {
     position: fixed;
     top: 0;
-    right: 0;              /* anchor bar to right side */
+    left: 0;              /* anchor bar to left side */
     width: 100%;           /* keep it full width */
     height: 50px;
     background: #C8102E;
