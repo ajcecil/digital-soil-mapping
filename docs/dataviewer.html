@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CALS Soil Data - Explorer</title>
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden; /* no scrollbars */
+    }
+
+    .menu-bar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      height: 40px;     /* fixed navbar height */
+      z-index: 1000;
+    }
+
+    .map-frame {
+      position: absolute;
+      top: 40px;        /* same as navbar height */
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: calc(100% - 40px); /* fill remaining space */
+      border: 3px solid #444;   /* <-- border around frame */
+      box-sizing: border-box;   /* ensures border doesn’t overflow */
+    }
+  </style>
+</head>
+<body>
+    <div id="site-menu"></div>
+
+    <script>
+      // 1. Fetch and inject the menu
+      fetch('menu.html')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(data => {
+          document.getElementById('site-menu').innerHTML = data;
+          
+          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
+          initializeScrollEffects();
+        })
+        .catch(error => {
+          console.error('Menu failed to load:', error);
+        });
+
+      // 3. Moved scroll logic into a function called after injection
+      function initializeScrollEffects() {
+        const header   = document.querySelector('.header');
+        const menuBar  = document.querySelector('.menu-bar');
+        
+        // Guard clause in case elements are missing
+        if (!header || !menuBar) return;
+
+        let lastScroll = window.pageYOffset;
+      
+        // on load: menu sits under the header
+        menuBar.classList.add('initial');
+      
+        window.addEventListener('scroll', () => {
+          const current = window.pageYOffset;
+      
+          if (current > lastScroll && current > header.offsetHeight) {
+            // scrolling DOWN past the header → hide header, pin menu to top
+            header.classList.add('hidden');
+            menuBar.classList.remove('initial');
+            menuBar.style.top = '0';
+          } else if (current < lastScroll) {
+            // scrolling UP → show header again, push menu back down
+            header.classList.remove('hidden');
+            menuBar.classList.add('initial');
+            menuBar.style.top = header.offsetHeight + 'px';
+          }
+      
+          lastScroll = current;
+        });
+      }
+    </script>
+
+</body>
+</html>

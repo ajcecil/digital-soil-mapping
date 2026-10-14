@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agronomy Farm Mapviewer</title>
+  <title>CALS Soil Data - Map</title>
 
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -37,34 +37,59 @@
   </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="menu-bar">
-    <ul class="menu">
-      <li class="dropdown"><a href="index.html">Home</a></li>
-      <li class="dropdown"><a href="https://agronomy-farms-soil-mapping.readthedocs.io/" target="_blank">Project Documentation</a></li>
-      <li class="dropdown">
-        <a href="#">Reference Material ▾</a>
-        <ul class="dropdown-menu">
-          <li><a href="https://agronomy-farms-soil-mapping.readthedocs.io/" target="_blank">Documentation</a></li>
-          <li><a href="https://www.agron.iastate.edu/glsi/" target="_blank">GLSI</a></li>
-        </ul>
-      </li>
-      <li class="dropdown">
-        <a href="#">Data Sources ▾</a>
-        <ul class="dropdown-menu">
-          <li><a href="https://apps.nationalmap.gov/lidar-explorer/#/" target="_blank">USGS Lidar Explorer</a></li>
-          <li><a href="https://earthengine.google.com/" target="_blank">Google Earth Engine</a></li>
-        </ul>
-      </li>
-      <li class="dropdown">
-        <a href="#">Imagery and Data ▾</a>
-        <ul class="dropdown-menu">
-          <li><a href="https://iastate.box.com/s/ytjl7nqkroxs3haodak27xjpkaqpajh4" target="_blank">Soil Maps</a></li>
-        </ul>
-      </li>
-    </ul>
-  </nav>
+    <div id="site-menu"></div>
 
+    <script>
+      // 1. Fetch and inject the menu
+      fetch('menu.html')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(data => {
+          document.getElementById('site-menu').innerHTML = data;
+          
+          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
+          initializeScrollEffects();
+        })
+        .catch(error => {
+          console.error('Menu failed to load:', error);
+        });
+
+      // 3. Moved scroll logic into a function called after injection
+      function initializeScrollEffects() {
+        const header   = document.querySelector('.header');
+        const menuBar  = document.querySelector('.menu-bar');
+        
+        // Guard clause in case elements are missing
+        if (!header || !menuBar) return;
+
+        let lastScroll = window.pageYOffset;
+      
+        // on load: menu sits under the header
+        menuBar.classList.add('initial');
+      
+        window.addEventListener('scroll', () => {
+          const current = window.pageYOffset;
+      
+          if (current > lastScroll && current > header.offsetHeight) {
+            // scrolling DOWN past the header → hide header, pin menu to top
+            header.classList.add('hidden');
+            menuBar.classList.remove('initial');
+            menuBar.style.top = '0';
+          } else if (current < lastScroll) {
+            // scrolling UP → show header again, push menu back down
+            header.classList.remove('hidden');
+            menuBar.classList.add('initial');
+            menuBar.style.top = header.offsetHeight + 'px';
+          }
+      
+          lastScroll = current;
+        });
+      }
+    </script>
   <!-- Map iframe -->
   <iframe src="webmapping.html" class="map-frame"></iframe>
 </body>
