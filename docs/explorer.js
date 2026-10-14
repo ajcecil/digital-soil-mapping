@@ -2,7 +2,7 @@ const CSV_URL = "content/data/current_data.csv";
 
 // Change this to the actual categorical column in your CSV.
 // Examples: "soil_order", "county", "crop", "site_id"
-const CATEGORY_COLUMN = "category";
+const CATEGORY_COLUMN = "Farm Group";
 
 const categoryFilter = document.getElementById("categoryFilter");
 const xSelect = document.getElementById("xSelect");
