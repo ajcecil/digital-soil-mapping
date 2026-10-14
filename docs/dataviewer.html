@@ -18,18 +18,6 @@
   <div id="site-menu"></div>
 
   <script>
-    function updateExplorerTopSpacing() {
-      const header = document.querySelector('.header');
-      const menuBar = document.querySelector('.menu-bar');
-      const explorerPage = document.querySelector('.explorer-page');
-
-      if (!explorerPage) return;
-
-      const headerHeight = header ? header.offsetHeight : 0;
-      const menuHeight = menuBar ? menuBar.offsetHeight : 0;
-
-      explorerPage.style.paddingTop = `${headerHeight + menuHeight + 24}px`;
-    }
     fetch('menu.html')
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
@@ -37,8 +25,10 @@
       })
       .then(data => {
         document.getElementById('site-menu').innerHTML = data;
+
         initializeScrollEffects();
         updateExplorerTopSpacing();
+
         window.addEventListener('resize', updateExplorerTopSpacing);
       })
       .catch(error => console.error('Menu failed to load:', error));
@@ -50,7 +40,9 @@
       if (!header || !menuBar) return;
 
       let lastScroll = window.pageYOffset;
+
       menuBar.classList.add('initial');
+      menuBar.style.top = header.offsetHeight + 'px';
 
       window.addEventListener('scroll', () => {
         const current = window.pageYOffset;
@@ -69,6 +61,18 @@
       });
     }
 
+    function updateExplorerTopSpacing() {
+      const header = document.querySelector('.header');
+      const menuBar = document.querySelector('.menu-bar');
+      const explorerPage = document.querySelector('.explorer-page');
+
+      if (!explorerPage) return;
+
+      const headerHeight = header ? header.offsetHeight : 0;
+      const menuHeight = menuBar ? menuBar.offsetHeight : 0;
+
+      explorerPage.style.paddingTop = `${headerHeight + menuHeight + 24}px`;
+    }
   </script>
 
   <!-- ================= DATA EXPLORER ================= -->
