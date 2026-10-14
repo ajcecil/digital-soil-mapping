@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CALS Soil Data - Explorer</title>
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Data explorer dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <link rel="stylesheet" href="explorer.css" />
+</head>
+<body>
+  <script>
+    fetch('menu.html')
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        return response.text();
+      })
+      .then(data => {
+        document.getElementById('site-menu').innerHTML = data;
+        initializeScrollEffects();
+      })
+      .catch(error => console.error('Menu failed to load:', error));
+
+    function initializeScrollEffects() {
+      const header  = document.querySelector('.header');
+      const menuBar = document.querySelector('.menu-bar');
+
+      if (!header || !menuBar) return;
+
+      let lastScroll = window.pageYOffset;
+      menuBar.classList.add('initial');
+
+      window.addEventListener('scroll', () => {
+        const current = window.pageYOffset;
+
+        if (current > lastScroll && current > header.offsetHeight) {
+          header.classList.add('hidden');
+          menuBar.classList.remove('initial');
+          menuBar.style.top = '0';
+        } else if (current < lastScroll) {
+          header.classList.remove('hidden');
+          menuBar.classList.add('initial');
+          menuBar.style.top = header.offsetHeight + 'px';
+        }
+
+        lastScroll = current;
+      });
+    }
+  </script>
+
+  <!-- ================= DATA EXPLORER ================= -->
+  <main class="explorer-page">
+    <section class="explorer">
+      <h1 class="explorer-title">Soil Data Explorer</h1>
+      <p class="explorer-subtitle">
+        Filter the dataset and inspect the resulting charts.
+      </p>
+
+      <div class="explorer-layout">
+        <aside class="explorer-filters">
+          <label for="categoryFilter">Category</label>
+          <select id="categoryFilter">
+            <option value="">All</option>
+          </select>
+
+          <label for="splitSelect">Split data by</label>
+          <select id="splitSelect">
+            <option value="">None</option>
+          </select>
+
+          <label for="ySelect">Y variable</label>
+          <select id="ySelect"></select>
+
+          <label for="minY">Minimum Y</label>
+          <input id="minY" type="number" step="any">
+
+          <label for="maxY">Maximum Y</label>
+          <input id="maxY" type="number" step="any">
+
+          <button id="resetBtn" type="button">Reset filters</button>
+        </aside>
+
+        <section class="explorer-results">
+          <div class="explorer-card">
+            <h2>Filtered plot</h2>
+            <div id="plot"></div>
+          </div>
+
+          <div class="explorer-card">
+            <h2>Filtered records</h2>
+            <div class="explorer-table-wrap">
+              <table id="dataTable">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <!-- =============== END DATA EXPLORER =============== -->
+
+  <div id="bottom-bar"></div>
+
+  <script>
+    fetch('bottom_bar.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('bottom-bar').innerHTML = html;
+      })
+      .catch(err => console.error('Bottom bar load failed:', err));
+  </script>
+
+  <script src="explorer.js"></script>
+</body>
+</html>
