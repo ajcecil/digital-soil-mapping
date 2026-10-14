@@ -17,60 +17,112 @@
 <body>
   <div id="site-menu"></div>
 
+  <script>
+    function updateExplorerTopSpacing() {
+      const header = document.querySelector('.header');
+      const menuBar = document.querySelector('.menu-bar');
+      const explorerPage = document.querySelector('.explorer-page');
 
-    <script>
-      // 1. Fetch and inject the menu
-      fetch('menu.html')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(data => {
-          document.getElementById('site-menu').innerHTML = data;
-          
-          // 2. Initialize the scroll effects ONLY after the elements actually exist in the DOM!
-          initializeScrollEffects();
-        })
-        .catch(error => {
-          console.error('Menu failed to load:', error);
-        });
+      if (!explorerPage) return;
 
-      // 3. Moved scroll logic into a function called after injection
-      function initializeScrollEffects() {
-        const header   = document.querySelector('.header');
-        const menuBar  = document.querySelector('.menu-bar');
-        
-        // Guard clause in case elements are missing
-        if (!header || !menuBar) return;
+      const headerHeight = header ? header.offsetHeight : 0;
+      const menuHeight = menuBar ? menuBar.offsetHeight : 0;
 
-        let lastScroll = window.pageYOffset;
-      
-        // on load: menu sits under the header
-        menuBar.classList.add('initial');
-      
-        window.addEventListener('scroll', () => {
-          const current = window.pageYOffset;
-      
-          if (current > lastScroll && current > header.offsetHeight) {
-            // scrolling DOWN past the header → hide header, pin menu to top
-            header.classList.add('hidden');
-            menuBar.classList.remove('initial');
-            menuBar.style.top = '0';
-          } else if (current < lastScroll) {
-            // scrolling UP → show header again, push menu back down
-            header.classList.remove('hidden');
-            menuBar.classList.add('initial');
-            menuBar.style.top = header.offsetHeight + 'px';
-          }
-      
-          lastScroll = current;
-        });
-      }
-    </script>
-  <!-- Map iframe -->
-  <iframe src="explorer.html" class="map-frame"></iframe>
+      explorerPage.style.paddingTop = `${headerHeight + menuHeight + 24}px`;
+    }
+    fetch('menu.html')
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        return response.text();
+      })
+      .then(data => {
+        document.getElementById('site-menu').innerHTML = data;
+        initializeScrollEffects();
+        updateExplorerTopSpacing();
+        window.addEventListener('resize', updateExplorerTopSpacing);
+      })
+      .catch(error => console.error('Menu failed to load:', error));
+
+    function initializeScrollEffects() {
+      const header  = document.querySelector('.header');
+      const menuBar = document.querySelector('.menu-bar');
+
+      if (!header || !menuBar) return;
+
+      let lastScroll = window.pageYOffset;
+      menuBar.classList.add('initial');
+
+      window.addEventListener('scroll', () => {
+        const current = window.pageYOffset;
+
+        if (current > lastScroll && current > header.offsetHeight) {
+          header.classList.add('hidden');
+          menuBar.classList.remove('initial');
+          menuBar.style.top = '0';
+        } else if (current < lastScroll) {
+          header.classList.remove('hidden');
+          menuBar.classList.add('initial');
+          menuBar.style.top = header.offsetHeight + 'px';
+        }
+
+        lastScroll = current;
+      });
+    }
+
+  </script>
+
+  <!-- ================= DATA EXPLORER ================= -->
+  <main class="explorer-page">
+    <section class="explorer">
+      <h1 class="explorer-title">Soil Data Explorer</h1>
+      <p class="explorer-subtitle">
+        Filter the dataset and inspect the resulting charts.
+      </p>
+
+      <div class="explorer-layout">
+        <aside class="explorer-filters">
+          <label for="categoryFilter">Category</label>
+          <select id="categoryFilter">
+            <option value="">All</option>
+          </select>
+
+          <label for="splitSelect">Split data by</label>
+          <select id="splitSelect">
+            <option value="">None</option>
+          </select>
+
+          <label for="ySelect">Y variable</label>
+          <select id="ySelect"></select>
+
+          <label for="minY">Minimum Y</label>
+          <input id="minY" type="number" step="any">
+
+          <label for="maxY">Maximum Y</label>
+          <input id="maxY" type="number" step="any">
+
+          <button id="resetBtn" type="button">Reset filters</button>
+        </aside>
+
+        <section class="explorer-results">
+          <div class="explorer-card">
+            <h2>Filtered plot</h2>
+            <div id="plot"></div>
+          </div>
+
+          <div class="explorer-card">
+            <h2>Filtered records</h2>
+            <div class="explorer-table-wrap">
+              <table id="dataTable">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <!-- =============== END DATA EXPLORER =============== -->
 
   <div id="bottom-bar"></div>
 
