@@ -10,16 +10,26 @@ const CATEGORY_COLUMN = "Farm Group";
 
 // Color palette used for unique values in the selected split column.
 const BAR_COLORS = [
-  "#1f77b4", // blue
-  "#ff7f0e", // orange
-  "#2ca02c", // green
-  "#d62728", // red
-  "#9467bd", // purple
-  "#8c564b", // brown
-  "#e377c2", // pink
-  "#7f7f7f", // gray
-  "#bcbd22", // olive
-  "#17becf"  // teal
+  "#C8102E", // Pantone 186C - Primary
+  "#F1BE48", // Pantone 142C - Primary
+  "#3E4827", // Pantone 5743C - Secondary
+  "#76881D", // Pantone 7496C - Secondary
+  "#A2A569", // Pantone 5777C - Secondary
+  "#003D4C", // Pantone 5548C - Secondary
+  "#006BA6",  // Pantone 307C - Secondary
+  "#7A99AC", // Pantone 5425C - Secondary
+  "#7C2529", // Pantone 1815C - Secondary
+  "#9A3324", // Pantone 484C - Secondary
+  "#BE531C", // Pantone 167C - Secondary
+  "#524727", // Pantone 449C - Primary - Neutral
+  "#9B945F", // Pantone 451C - Primary - Neutral
+  "#CAC7A7", // Pantone 454C - Primary - Neutral
+  "#8B5B29", // Pantone 464C - Secondary - Neutral
+  "#B9975B", // Pantone 465C - Secondary - Neutral
+  "#EED484", // Pantone 7403C - Secondary - Neutral
+  "#6E6259", // Pantone Warm Grey 11C - Secondary - Neutral
+  "#707372", // Pantone 424C - Secondary - Neutral
+  "#ACA39A", // Pantone Warm Grey 5C - Secondary - Neutral
 ];
 
 const DEFAULT_COLOR = "#7f7f7f";
