@@ -70,6 +70,7 @@
   <script src="https://unpkg.com/shpjs@6.2.0/dist/shp.js"></script>
 
   <script>
+    window.addEventListener("load", () => {
     // ============================================================
     // Configuration
     // ============================================================
@@ -78,7 +79,7 @@
     // This example loads:
     // page_files/boundaries/field_boundary.shp
     // page_files/boundaries/field_boundary.prj
-    const BOUNDARY_BASE = "docs/page_files/maps/boundaries/field_boundaries";
+    const BOUNDARY_BASE = "page_files/maps/boundaries/field_boundaries";
 
     const MIN_ZOOM = 9;
     const MAX_ZOOM = 18;
