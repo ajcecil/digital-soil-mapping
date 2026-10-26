@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>CALS Soil Data - Map</title>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    :root {
+      --map-top: 0px;
+    }
+
+    #site-menu {
+      position: relative;
+      z-index: 1000;
+    }
+
+    .map-frame {
+      position: fixed;
+
+      /* Updated automatically after menu.html loads. */
+      top: var(--map-top);
+      left: 0;
+
+      width: 100%;
+      height: calc(100% - var(--map-top));
+
+      border: 3px solid #444;
+      box-sizing: border-box;
+      display: block;
+
+      z-index: 0;
+
+      /* Prevent the map flashing over the header during loading. */
+      visibility: hidden;
+    }
+
+    .map-frame.ready {
+      visibility: visible;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="site-menu"></div>
+
+  <iframe
+    src="webmapping_B.html"
+    class="map-frame"
+    id="map-frame"
+    title="CALS Soil Data Map"
+  ></iframe>
+
+  <div id="bottom-bar"></div>
+
+  <script>
+    const menuContainer = document.getElementById("site-menu");
+    const mapFrame = document.getElementById("map-frame");
+
+    let layoutObserver;
+    let layoutFrame = null;
+
+    function updateMapPosition() {
+      const header = menuContainer.querySelector(".header");
+      const menuBar = menuContainer.querySelector(".menu-bar");
+
+      // On this non-scrolling page, keep the header visible.
+      if (header) {
+        header.classList.remove("hidden");
+      }
+
+      // Place the menu below the header, matching your existing
+      // header + menu arrangement.
+      if (header && menuBar) {
+        const headerBottom = Math.max(
+          0,
+          header.getBoundingClientRect().bottom
+        );
+
+        menuBar.classList.add("initial");
+        menuBar.style.top = `${headerBottom}px`;
+      }
+
+      // Measure both elements because fixed/absolute children
+      // may not contribute to the container's height.
+      const elements = [
+        menuContainer,
+        header,
+        menuBar
+      ].filter(Boolean);
+
+      let bottom = 0;
+
+      for (const element of elements) {
+        const style = getComputedStyle(element);
+
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden"
+        ) {
+          continue;
+        }
+
+        const rect = element.getBoundingClientRect();
+
+        if (rect.height > 0) {
+          bottom = Math.max(bottom, rect.bottom);
+        }
+      }
+
+      const mapTop = Math.max(0, Math.ceil(bottom));
+
+      document.documentElement.style.setProperty(
+        "--map-top",
+        `${mapTop}px`
+      );
+
+      mapFrame.classList.add("ready");
+    }
+
+    function scheduleLayoutUpdate() {
+      if (layoutFrame !== null) return;
+
+      layoutFrame = requestAnimationFrame(() => {
+        layoutFrame = null;
+        updateMapPosition();
+      });
+    }
+
+    async function loadMenu() {
+      try {
+        const response = await fetch("menu.html");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        menuContainer.innerHTML = await response.text();
+
+        // Establish the correct position immediately.
+        updateMapPosition();
+
+        // Recalculate when header/menu dimensions change.
+        layoutObserver = new ResizeObserver(scheduleLayoutUpdate);
+
+        const observedElements = [
+          menuContainer,
+          menuContainer.querySelector(".header"),
+          menuContainer.querySelector(".menu-bar")
+        ].filter(Boolean);
+
+        for (const element of observedElements) {
+          layoutObserver.observe(element);
+        }
+
+        // Recalculate after images such as logos finish loading.
+        menuContainer.addEventListener(
+          "load",
+          scheduleLayoutUpdate,
+          true
+        );
+
+        // Recalculate after CSS transitions finish.
+        menuContainer.addEventListener(
+          "transitionend",
+          scheduleLayoutUpdate
+        );
+
+        // Fonts can change the header/menu dimensions.
+        if (document.fonts) {
+          document.fonts.ready.then(scheduleLayoutUpdate);
+        }
+      } catch (error) {
+        console.error("Menu failed to load:", error);
+
+        // Still display the map if the menu cannot be loaded.
+        updateMapPosition();
+      }
+    }
+
+    async function loadBottomBar() {
+      try {
+        const response = await fetch("bottom_bar.html");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        document.getElementById("bottom-bar").innerHTML =
+          await response.text();
+      } catch (error) {
+        console.error("Bottom bar load failed:", error);
+      }
+    }
+
+    window.addEventListener("resize", scheduleLayoutUpdate);
+    window.addEventListener("load", scheduleLayoutUpdate);
+
+    loadMenu();
+    loadBottomBar();
+  </script>
+</body>
+</html>
