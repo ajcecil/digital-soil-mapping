@@ -3,211 +3,536 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leaflet GeoTIFF Tiles</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <title>CALS Soil Data — Map</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
   <style>
-    #map { height: 100vh; }
-    .leaflet-control-scale-line {
-        font-size: 16px;
-        line-height: 1.5px;
-        padding: 4px 8px;
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
     }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .leaflet-control-scale-line {
+      font-size: 16px;
+      line-height: 1.2;
+      padding: 4px 8px;
+    }
+
     .legend {
-      line-height: 16px;
+      line-height: 18px;
       color: #555;
       background: white;
       padding: 8px;
       border-radius: 5px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     }
+
     .legend img {
-      width: 60px;  /* adjust to your legend size */
+      width: 60px;
       display: block;
+      margin-top: 5px;
+    }
+
+    .boundary-status {
+      max-width: 260px;
+      padding: 8px 12px;
+      background: white;
+      color: #444;
+      border-radius: 5px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+      font: 13px/1.4 sans-serif;
+    }
+
+    .boundary-status.error {
+      color: #a40000;
+      border: 1px solid #a40000;
     }
   </style>
 </head>
+
 <body>
+  <div id="map"></div>
 
-<div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/shpjs@6.2.0/dist/shp.js"></script>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // ============================================================
+    // Configuration
+    // ============================================================
 
-<script>
-  // Initialize map
-  const map = L.map('map').setView([41.99, -93.74], 16);
+    // Change this to your shapefile path, WITHOUT the extension.
+    // This example loads:
+    // page_files/boundaries/field_boundary.shp
+    // page_files/boundaries/field_boundary.prj
+    const BOUNDARY_BASE = "docs/page_files/maps/boundaries/field_boundaries";
 
-  // Add basemap
-  const sat = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',  {
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Earthstar Geographics, Maxar, GeoEye, USDA FSA, USGS, AeroGRID, IGN, and the GIS User Community'
-  }).addTo(map);
+    const MIN_ZOOM = 9;
+    const MAX_ZOOM = 18;
 
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  });
+    // Set false if you do not want the orange boundary outline.
+    const SHOW_BOUNDARY_OUTLINE = true;
 
-  
+    const rasterBounds = L.latLngBounds(
+      [40.609027, -96.074858],
+      [43.467584, -91.141255]
+    );
 
-  // Define raster bounds
-  const southWest = L.latLng(40.609027,-96.074858);
-  const northEast = L.latLng(43.467584,-91.141255);
-  const rasterBounds = L.latLngBounds(southWest, northEast);
+    // ============================================================
+    // Map and basemaps
+    // ============================================================
 
-  const BoundedTileLayer = L.TileLayer.extend({
-    createTile: function(coords, done) {
-      const tileBounds = this._tileCoordsToBounds(coords);
-      if (!rasterBounds.intersects(tileBounds)) {
-        const empty = document.createElement('div');
-        setTimeout(() => done(null, empty), 0);
-        return empty;
+    const map = L.map("map", {
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+      maxBounds: rasterBounds
+    });
+
+    map.fitBounds(rasterBounds);
+
+    const sat = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/" +
+      "World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution:
+          "Tiles &copy; Esri — Source: Esri, Earthstar Geographics, " +
+          "Maxar, GeoEye, USDA FSA, USGS, AeroGRID, IGN, " +
+          "and the GIS User Community",
+        maxZoom: MAX_ZOOM
       }
-      return L.TileLayer.prototype.createTile.call(this, coords, done);
+    ).addTo(map);
+
+    const osm = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: MAX_ZOOM
+      }
+    );
+
+    // ============================================================
+    // Loading/error message
+    // ============================================================
+
+    const statusControl = L.control({
+      position: "topleft"
+    });
+
+    let statusElement;
+
+    statusControl.onAdd = function() {
+      statusElement = L.DomUtil.create("div", "boundary-status");
+      statusElement.setAttribute("role", "status");
+      statusElement.textContent = "Loading map boundary…";
+
+      L.DomEvent.disableClickPropagation(statusElement);
+      L.DomEvent.disableScrollPropagation(statusElement);
+
+      return statusElement;
+    };
+
+    statusControl.addTo(map);
+
+    // ============================================================
+    // Boundary state
+    // ============================================================
+
+    let activeBoundary = null;
+
+    // Cache projected polygon coordinates for each zoom level.
+    const projectedBoundaryCache = new Map();
+
+    const boundaryLayer = L.geoJSON(null, {
+      interactive: false,
+      style: {
+        color: "#ff7800",
+        weight: 2,
+        fill: false
+      }
+    });
+
+    if (SHOW_BOUNDARY_OUTLINE) {
+      boundaryLayer.addTo(map);
     }
-  });
 
-  // Add your raster tiles
-  const phLayer = new BoundedTileLayer('page_files/maps/PH/tiles/{z}/{x}/{y}.png', {
-    attribution: 'pH Map Tiles',
-    opacity: 1,
-    noWrap: true,
-    minZoom: 9,
-    maxZoom: 18      // ← must match what Python actually generated
-  }).addTo(map);
+    function getProjectedPolygons(zoom) {
+      if (!activeBoundary) {
+        return null;
+      }
 
-  const bphLayer = new BoundedTileLayer('page_files/maps/BPH/tiles/{z}/{x}/{y}.png', {
-    attribution: 'BpH Tiles',
-    opacity: 1,
-    noWrap: true,
-    minZoom: 9,
-    maxZoom: 18
-  });
+      if (projectedBoundaryCache.has(zoom)) {
+        return projectedBoundaryCache.get(zoom);
+      }
 
-  const omLayer = new BoundedTileLayer('page_files/maps/OM/tiles/{z}/{x}/{y}.png', {
-    attribution: 'OM Tiles',
-    opacity: 1,
-    noWrap: true,
-    minZoom: 9,
-    maxZoom: 18
-  });
+      const projectedPolygons = [];
 
-  const cecLayer = new BoundedTileLayer('page_files/maps/CEC/tiles/{z}/{x}/{y}.png', {
-    attribution: 'OM Tiles',
-    opacity: 1,
-    noWrap: true,
-    minZoom: 9,
-    maxZoom: 18
-  });
+      for (const feature of activeBoundary.features) {
+        const geometry = feature.geometry;
 
-  // Add layer control (shows name)
-  L.control.layers(
-    { "Satellite": sat, "OpenStreetMap": osm },  // basemaps
-    { "Soil pH": phLayer, "Soil BPH": bphLayer, "Organic Matter": omLayer, "CEC": cecLayer}     // overlays
-  ).addTo(map);
+        const polygons = geometry.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry.coordinates;
 
-  // Add scale bar
-  L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
+        for (const polygon of polygons) {
+          const rings = polygon.map(ring =>
+            ring.map(coordinate =>
+              map.project(
+                L.latLng(coordinate[1], coordinate[0]),
+                zoom
+              )
+            )
+          );
 
-  // Add legend (custom control)
-  const legend = L.control({ position: 'bottomright' });
-  legend.onAdd = function () {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-      <strong>Soil pH</strong><br>
-      <img src="page_files/maps/PH/legend.png" alt="PH Legend">
-    `;
-    return div;
-  };
-  legend.addTo(map)
-  // Show legend only when Soil pH layer is active
-  map.on('overlayadd', function (e) {
-    if (e.name === "Soil pH") {
-      legend.addTo(map);
+          projectedPolygons.push(rings);
+        }
+      }
+
+      projectedBoundaryCache.set(zoom, projectedPolygons);
+
+      return projectedPolygons;
     }
-  });
 
-  map.on('overlayremove', function (e) {
-    if (e.name === "Soil pH") {
-      map.removeControl(legend);
+    // ============================================================
+    // Raster tiles masked by boundary
+    // ============================================================
+
+    const MaskedTileLayer = L.TileLayer.extend({
+      createTile: function(coords, done) {
+        const tile = document.createElement("canvas");
+        const size = this.getTileSize();
+
+        tile.width = size.x;
+        tile.height = size.y;
+
+        const context = tile.getContext("2d");
+        const polygons = getProjectedPolygons(coords.z);
+        const tileBounds = this._tileCoordsToBounds(coords);
+
+        // Do not display unmasked tiles while the boundary loads,
+        // or if loading fails.
+        if (
+          !polygons ||
+          !rasterBounds.intersects(tileBounds)
+        ) {
+          setTimeout(() => done(null, tile), 0);
+          return tile;
+        }
+
+        const origin = L.point(
+          coords.x * size.x,
+          coords.y * size.y
+        );
+
+        // Create a mask for this tile.
+        const mask = document.createElement("canvas");
+        mask.width = size.x;
+        mask.height = size.y;
+
+        const maskContext = mask.getContext("2d");
+        maskContext.fillStyle = "#fff";
+
+        for (const rings of polygons) {
+          maskContext.beginPath();
+
+          for (const ring of rings) {
+            ring.forEach((point, index) => {
+              const x = point.x - origin.x;
+              const y = point.y - origin.y;
+
+              if (index === 0) {
+                maskContext.moveTo(x, y);
+              } else {
+                maskContext.lineTo(x, y);
+              }
+            });
+
+            maskContext.closePath();
+          }
+
+          // Keep polygon holes transparent.
+          // Separate fills combine multiple polygon features.
+          maskContext.fill("evenodd");
+        }
+
+        const image = new Image();
+
+        image.onload = () => {
+          try {
+            context.drawImage(image, 0, 0, size.x, size.y);
+
+            context.globalCompositeOperation = "destination-in";
+            context.drawImage(mask, 0, 0);
+            context.globalCompositeOperation = "source-over";
+
+            done(null, tile);
+          } catch (error) {
+            done(error, tile);
+          }
+        };
+
+        image.onerror = () => {
+          done(
+            new Error("Could not load raster tile: " + image.src),
+            tile
+          );
+        };
+
+        image.src = this.getTileUrl(coords);
+
+        return tile;
+      }
+    });
+
+    function makeSoilLayer(folder, attribution) {
+      return new MaskedTileLayer(
+        `page_files/maps/${folder}/tiles/{z}/{x}/{y}.png`,
+        {
+          attribution,
+          opacity: 1,
+          noWrap: true,
+          bounds: rasterBounds,
+          minZoom: MIN_ZOOM,
+          maxZoom: MAX_ZOOM
+        }
+      );
     }
-  });
 
+    const phLayer = makeSoilLayer("PH", "pH Map Tiles").addTo(map);
+    const bphLayer = makeSoilLayer("BPH", "BpH Map Tiles");
+    const omLayer = makeSoilLayer("OM", "Organic Matter Map Tiles");
+    const cecLayer = makeSoilLayer("CEC", "CEC Map Tiles");
 
-  const bphlegend = L.control({ position: 'bottomright' });
-  bphlegend.onAdd = function () {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-      <strong>BPH</strong><br>
-      <img src="page_files/maps/BPH/legend.png" alt="BPH Legend">
-    `;
-    return div;
-  };
-  // Show legend only when Soil pH layer is active
-  map.on('overlayadd', function (e) {
-    if (e.name === "Soil BPH") {
-      bphlegend.addTo(map);
+    const soilLayers = [
+      phLayer,
+      bphLayer,
+      omLayer,
+      cecLayer
+    ];
+
+    function redrawSoilLayers() {
+      projectedBoundaryCache.clear();
+
+      for (const layer of soilLayers) {
+        if (map.hasLayer(layer)) {
+          layer.redraw();
+        }
+      }
     }
-  });
 
-  map.on('overlayremove', function (e) {
-    if (e.name === "Soil BPH") {
-      map.removeControl(bphlegend);
+    // ============================================================
+    // Layer selector and scale bar
+    // ============================================================
+
+    L.control.layers(
+      {
+        "Satellite": sat,
+        "OpenStreetMap": osm
+      },
+      {
+        "Soil pH": phLayer,
+        "Soil BPH": bphLayer,
+        "Organic Matter": omLayer,
+        "CEC": cecLayer
+      }
+    ).addTo(map);
+
+    L.control.scale({
+      position: "bottomleft",
+      imperial: false
+    }).addTo(map);
+
+    // ============================================================
+    // Legends
+    // ============================================================
+
+    function createLegend(title, imagePath) {
+      const legend = L.control({
+        position: "bottomright"
+      });
+
+      legend.onAdd = function() {
+        const div = L.DomUtil.create("div", "legend");
+
+        const heading = document.createElement("strong");
+        heading.textContent = title;
+
+        const image = document.createElement("img");
+        image.src = imagePath;
+        image.alt = `${title} legend`;
+
+        div.append(heading, image);
+
+        return div;
+      };
+
+      return legend;
     }
-  });
-  
-  const omlegend = L.control({ position: 'bottomright' });
-  bphlegend.onAdd = function () {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-      <strong>BPH</strong><br>
-      <img src="page_files/maps/OM/legend.png" alt="BPH Legend">
-    `;
-    return div;
-  };
-  // Show legend only when Soil pH layer is active
-  map.on('overlayadd', function (e) {
-    if (e.name === "Organic Matter") {
-      omlegend.addTo(map);
+
+    const legendEntries = [
+      {
+        layer: phLayer,
+        legend: createLegend(
+          "Soil pH",
+          "page_files/maps/PH/legend.png"
+        )
+      },
+      {
+        layer: bphLayer,
+        legend: createLegend(
+          "Soil BPH",
+          "page_files/maps/BPH/legend.png"
+        )
+      },
+      {
+        layer: omLayer,
+        legend: createLegend(
+          "Organic Matter",
+          "page_files/maps/OM/legend.png"
+        )
+      },
+      {
+        layer: cecLayer,
+        legend: createLegend(
+          "CEC",
+          "page_files/maps/CEC/legend.png"
+        )
+      }
+    ];
+
+    function updateLegends() {
+      for (const entry of legendEntries) {
+        if (activeBoundary && map.hasLayer(entry.layer)) {
+          entry.legend.addTo(map);
+        } else {
+          entry.legend.remove();
+        }
+      }
+
+      if (map.hasLayer(boundaryLayer)) {
+        boundaryLayer.bringToFront();
+      }
     }
-  });
 
-  map.on('overlayremove', function (e) {
-    if (e.name === "Organic Matter") {
-      map.removeControl(omlegend);
+    map.on("overlayadd overlayremove", updateLegends);
+
+    // ============================================================
+    // Load the existing shapefile automatically
+    // ============================================================
+
+    async function fetchBoundaryFile(extension, asText = false) {
+      const url = `${BOUNDARY_BASE}.${extension}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(
+          `Could not load ${url}: HTTP ${response.status}`
+        );
+      }
+
+      return asText
+        ? response.text()
+        : response.arrayBuffer();
     }
-  });
 
-  const ceclegend = L.control({ position: 'bottomright' });
-  bphlegend.onAdd = function () {
-    const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `
-      <strong>BPH</strong><br>
-      <img src="page_files/maps/CEC/legend.png" alt="BPH Legend">
-    `;
-    return div;
-  };
-  // Show legend only when Soil pH layer is active
-  map.on('overlayadd', function (e) {
-    if (e.name === "CEC") {
-      ceclegend.addTo(map);
+    async function loadExistingBoundary() {
+      try {
+        const [shpBuffer, projection] = await Promise.all([
+          fetchBoundaryFile("shp"),
+          fetchBoundaryFile("prj", true)
+        ]);
+
+        if (!projection.trim()) {
+          throw new Error("The boundary .prj file is empty.");
+        }
+
+        const geometries = shp.parseShp(shpBuffer, projection);
+
+        const polygonGeometries = geometries.filter(geometry =>
+          geometry &&
+          (
+            geometry.type === "Polygon" ||
+            geometry.type === "MultiPolygon"
+          )
+        );
+
+        if (polygonGeometries.length === 0) {
+          throw new Error(
+            "The shapefile contains no Polygon or MultiPolygon geometry."
+          );
+        }
+
+        const nextBoundary = {
+          type: "FeatureCollection",
+          features: polygonGeometries.map(geometry => ({
+            type: "Feature",
+            properties: {},
+            geometry
+          }))
+        };
+
+        const bounds = L.geoJSON(nextBoundary).getBounds();
+
+        if (!bounds.isValid()) {
+          throw new Error("The boundary coordinates are invalid.");
+        }
+
+        if (!rasterBounds.intersects(bounds)) {
+          throw new Error(
+            "The boundary is outside the soil raster extent. " +
+            "Check the shapefile and its projection."
+          );
+        }
+
+        activeBoundary = nextBoundary;
+
+        boundaryLayer.clearLayers();
+        boundaryLayer.addData(activeBoundary);
+
+        redrawSoilLayers();
+        updateLegends();
+
+        map.fitBounds(bounds, {
+          padding: [25, 25],
+          maxZoom: MAX_ZOOM
+        });
+
+        statusControl.remove();
+
+        console.info(
+          "Soil raster boundary loaded:",
+          BOUNDARY_BASE,
+          `${polygonGeometries.length} polygon feature(s)`
+        );
+      } catch (error) {
+        console.error("Boundary loading failed:", error);
+
+        activeBoundary = null;
+        boundaryLayer.clearLayers();
+
+        redrawSoilLayers();
+        updateLegends();
+
+        statusElement.classList.add("error");
+        statusElement.textContent =
+          "Could not load the soil-map boundary. " +
+          "See the browser console for details.";
+      }
     }
-  });
 
-  map.on('overlayremove', function (e) {
-    if (e.name === "CEC") {
-      map.removeControl(ceclegend);
-    }
-  });
-
-
-  // Fit map view to raster
-  map.fitBounds(rasterBounds);
-
-  // Constrain map to raster extent
-  map.setMaxBounds(rasterBounds);
-  map.setMinZoom(9);
-  map.setMaxZoom(14);
-</script>
-
+    loadExistingBoundary();
+  </script>
 </body>
 </html>
-
