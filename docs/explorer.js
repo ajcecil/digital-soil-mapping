@@ -8,10 +8,10 @@ const CSV_URL = "content/data/current_data.csv";
 // Examples: "soil_order", "county", "crop", "site_id"
 const CATEGORY_COLUMN = "Farm Group";
 
-// Color palette used for unique values in the selected split column.
+// Iowa State University Color palette used for unique values in the selected split column.
 const BAR_COLORS = [
-  "#C8102E", // Pantone 186C - Primary
-  "#F1BE48", // Pantone 142C - Primary
+  // "#C8102E", // Pantone 186C - Primary
+  // "#F1BE48", // Pantone 142C - Primary
   "#3E4827", // Pantone 5743C - Secondary
   "#76881D", // Pantone 7496C - Secondary
   "#A2A569", // Pantone 5777C - Secondary
