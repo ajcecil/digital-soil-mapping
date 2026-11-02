@@ -169,7 +169,12 @@
       const map = L.map("map", {
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
-        maxBounds: rasterBounds
+        maxBounds: rasterBounds,
+
+        // Avoid an animated tile transform temporarily moving out
+        // of alignment with the pane's clipping geometry.
+        zoomAnimation: false,
+        fadeAnimation: false
       });
 
       map.fitBounds(rasterBounds);
