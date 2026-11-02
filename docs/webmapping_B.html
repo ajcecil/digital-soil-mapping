@@ -18,6 +18,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: sans-serif;
     }
 
     #map {
@@ -63,7 +64,7 @@
     }
 
     .polygon-filter {
-      width: 250px;
+      width: 270px;
       max-width: calc(100vw - 90px);
       max-height: calc(100vh - 150px);
       overflow-y: auto;
@@ -76,8 +77,13 @@
     }
 
     .polygon-filter-title {
-      margin-bottom: 8px;
+      margin-bottom: 5px;
       font-weight: 600;
+    }
+
+    .polygon-filter-help {
+      color: #666;
+      margin-bottom: 8px;
     }
 
     .polygon-filter label {
@@ -101,10 +107,6 @@
       padding-top: 6px;
     }
 
-    .polygon-filter-list.disabled {
-      opacity: 0.55;
-    }
-
     .polygon-filter-actions {
       display: flex;
       flex-wrap: wrap;
@@ -114,7 +116,12 @@
 
     .polygon-filter-actions button {
       cursor: pointer;
-      padding: 4px 8px;
+      padding: 5px 8px;
+    }
+
+    .polygon-filter-actions button:disabled {
+      cursor: default;
+      opacity: 0.5;
     }
 
     .polygon-filter-summary {
@@ -136,18 +143,19 @@
       // Configuration
       // ========================================================
 
-      // Shapefile path WITHOUT an extension.
       const BOUNDARY_BASE =
         "page_files/maps/boundaries/field_boundaries";
 
-      // Change to the DBF column containing polygon/field names.
-      // Falls back to Polygon 1, Polygon 2, etc. if not found.
       const POLYGON_LABEL_FIELD = "PROPERTY_N";
 
       const MIN_ZOOM = 9;
       const MAX_ZOOM = 18;
 
       const SHOW_BOUNDARY_OUTLINE = true;
+
+      // Keep false for the same XYZ addressing as your original.
+      // Set true only if your tile folders use TMS Y numbering.
+      const SOIL_TILES_TMS = false;
 
       const rasterBounds = L.latLngBounds(
         [40.609027, -96.074858],
@@ -165,6 +173,14 @@
       });
 
       map.fitBounds(rasterBounds);
+
+      map.createPane("soilPane");
+      map.getPane("soilPane").style.zIndex = "350";
+      map.getPane("soilPane").style.pointerEvents = "none";
+
+      map.createPane("boundaryPane");
+      map.getPane("boundaryPane").style.zIndex = "450";
+      map.getPane("boundaryPane").style.pointerEvents = "none";
 
       const sat = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/" +
@@ -187,7 +203,7 @@
       );
 
       // ========================================================
-      // Loading/error message
+      // Boundary-loading status
       // ========================================================
 
       let statusElement;
@@ -196,7 +212,7 @@
         position: "topleft"
       });
 
-      statusControl.onAdd = function() {
+      statusControl.onAdd = function () {
         statusElement = L.DomUtil.create(
           "div",
           "boundary-status"
@@ -217,24 +233,24 @@
       // Filter state
       // ========================================================
 
-      let boundaryLoaded = false;
       let allBoundaryFeatures = [];
 
-      // null = no filter.
-      // Empty FeatureCollection = filter with nothing selected.
+      // Empty selection always means full raster.
+      const selectedPolygonIds = new Set();
+
+      // null = no clipping.
       let activeBoundary = null;
 
-      // Initial state: show the complete soil raster.
-      let noFilter = true;
-
-      const selectedPolygonIds = new Set();
+      // Projection cache is specific to the current selection.
       const projectedBoundaryCache = new Map();
 
       const boundaryLayer = L.geoJSON(null, {
+        pane: "boundaryPane",
         interactive: false,
         style: {
           color: "#ff7800",
           weight: 2,
+          opacity: 1,
           fill: false
         }
       });
@@ -244,7 +260,7 @@
       }
 
       // ========================================================
-      // Project selected polygons into tile pixel coordinates
+      // Project polygons into global pixels at a tile's zoom
       // ========================================================
 
       function getProjectedPolygons(zoom) {
@@ -256,7 +272,7 @@
           return projectedBoundaryCache.get(zoom);
         }
 
-        const projectedPolygons = [];
+        const result = [];
 
         for (const feature of activeBoundary.features) {
           const geometry = feature.geometry;
@@ -275,8 +291,6 @@
               )
             );
 
-            // Store a bounding box to skip polygons that are
-            // completely outside an individual tile.
             const bounds = L.bounds();
 
             for (const ring of rings) {
@@ -286,25 +300,27 @@
             }
 
             if (bounds.isValid()) {
-              projectedPolygons.push({
-                rings,
-                bounds
-              });
+              result.push({ rings, bounds });
             }
           }
         }
 
-        projectedBoundaryCache.set(zoom, projectedPolygons);
+        projectedBoundaryCache.set(zoom, result);
 
-        return projectedPolygons;
+        return result;
       }
 
       // ========================================================
-      // Masked raster tile layer
+      // Canvas raster layer
       // ========================================================
 
-      const MaskedTileLayer = L.TileLayer.extend({
-        createTile: function(coords, done) {
+      const MaskedRasterLayer = L.GridLayer.extend({
+        initialize: function (urlTemplate, options) {
+          this._urlTemplate = urlTemplate;
+          L.setOptions(this, options);
+        },
+
+        createTile: function (coords, done) {
           const tile = document.createElement("canvas");
           const size = this.getTileSize();
 
@@ -312,44 +328,41 @@
           tile.height = size.y;
 
           const context = tile.getContext("2d");
-          const tileBounds = this._tileCoordsToBounds(coords);
 
-          const finishEmpty = () => {
-            setTimeout(() => done(null, tile), 0);
-            return tile;
+          // Defer completion so Leaflet can register the tile first,
+          // including when a tile has nothing to render.
+          const complete = (error = null) => {
+            setTimeout(() => done(error, tile), 0);
           };
 
-          // Do not show unfiltered tiles before initialization.
-          if (
-            !boundaryLoaded ||
-            !rasterBounds.intersects(tileBounds)
-          ) {
-            return finishEmpty();
+          if (!context) {
+            complete(new Error("Could not create a canvas context."));
+            return tile;
           }
-
-          const polygons = getProjectedPolygons(coords.z);
 
           const origin = L.point(
             coords.x * size.x,
             coords.y * size.y
           );
 
+          const pixelBounds = L.bounds(
+            origin,
+            origin.add(size)
+          );
+
+          // Capture the selection for this tile before loading.
+          const polygons = getProjectedPolygons(coords.z);
+
           let mask = null;
 
-          // null means no filter: draw the complete image.
           if (polygons !== null) {
-            const pixelBounds = L.bounds(
-              origin,
-              origin.add(size)
+            const overlappingPolygons = polygons.filter(
+              polygon => polygon.bounds.intersects(pixelBounds)
             );
 
-            const tilePolygons = polygons.filter(polygon =>
-              polygon.bounds.intersects(pixelBounds)
-            );
-
-            // No selected polygon overlaps this tile.
-            if (tilePolygons.length === 0) {
-              return finishEmpty();
+            if (overlappingPolygons.length === 0) {
+              complete();
+              return tile;
             }
 
             mask = document.createElement("canvas");
@@ -357,9 +370,15 @@
             mask.height = size.y;
 
             const maskContext = mask.getContext("2d");
+
+            if (!maskContext) {
+              complete(new Error("Could not create a mask context."));
+              return tile;
+            }
+
             maskContext.fillStyle = "#fff";
 
-            for (const polygon of tilePolygons) {
+            for (const polygon of overlappingPolygons) {
               maskContext.beginPath();
 
               for (const ring of polygon.rings) {
@@ -377,11 +396,20 @@
                 maskContext.closePath();
               }
 
-              // Preserve holes within individual polygons.
-              // Separate fills combine overlapping polygons.
+              // Preserve holes; separate fills union the polygons.
               maskContext.fill("evenodd");
             }
           }
+
+          const y = this.options.tms
+            ? Math.pow(2, coords.z) - 1 - coords.y
+            : coords.y;
+
+          const url = L.Util.template(this._urlTemplate, {
+            x: coords.x,
+            y,
+            z: coords.z
+          });
 
           const image = new Image();
 
@@ -396,52 +424,67 @@
               );
 
               if (mask) {
-                context.globalCompositeOperation =
-                  "destination-in";
-
+                context.globalCompositeOperation = "destination-in";
                 context.drawImage(mask, 0, 0);
-
-                context.globalCompositeOperation =
-                  "source-over";
+                context.globalCompositeOperation = "source-over";
               }
 
-              done(null, tile);
+              complete();
             } catch (error) {
-              done(error, tile);
+              complete(error);
             }
           };
 
           image.onerror = () => {
-            done(
-              new Error(
-                "Could not load raster tile: " + image.src
-              ),
-              tile
-            );
+            complete(new Error("Could not load raster tile: " + url));
           };
 
-          image.src = this.getTileUrl(coords);
+          image.src = url;
 
           return tile;
         }
       });
 
       // ========================================================
-      // Soil raster layers
+      // Soil layers
       // ========================================================
 
       function makeSoilLayer(folder, attribution) {
-        return new MaskedTileLayer(
+        const layer = new MaskedRasterLayer(
           `page_files/maps/${folder}/tiles/{z}/{x}/{y}.png`,
           {
             attribution,
+            pane: "soilPane",
             opacity: 1,
+            tileSize: 256,
             noWrap: true,
             bounds: rasterBounds,
             minZoom: MIN_ZOOM,
-            maxZoom: MAX_ZOOM
+            maxZoom: MAX_ZOOM,
+            tms: SOIL_TILES_TMS,
+            updateWhenZooming: true,
+            updateWhenIdle: false,
+            keepBuffer: 2
           }
         );
+
+        // Log the first failed request per layer without flooding
+        // the console if the tile pyramid has many missing tiles.
+        let reportedTileError = false;
+
+        layer.on("tileerror", event => {
+          if (!reportedTileError) {
+            reportedTileError = true;
+
+            console.warn(
+              `Soil tile loading failed for ${folder}. ` +
+              "Check this URL and your available zoom levels:",
+              event.error
+            );
+          }
+        });
+
+        return layer;
       }
 
       const phLayer = makeSoilLayer(
@@ -481,10 +524,6 @@
         }
       }
 
-      // ========================================================
-      // Layer selector and scale
-      // ========================================================
-
       L.control.layers(
         {
           "Satellite": sat,
@@ -512,7 +551,7 @@
           position: "bottomright"
         });
 
-        legend.onAdd = function() {
+        legend.onAdd = function () {
           const div = L.DomUtil.create("div", "legend");
 
           const heading = document.createElement("strong");
@@ -523,6 +562,9 @@
           image.alt = `${title} legend`;
 
           div.append(heading, image);
+
+          L.DomEvent.disableClickPropagation(div);
+          L.DomEvent.disableScrollPropagation(div);
 
           return div;
         };
@@ -563,39 +605,38 @@
 
       function updateLegends() {
         for (const entry of legendEntries) {
-          if (
-            boundaryLoaded &&
-            map.hasLayer(entry.layer)
-          ) {
+          if (map.hasLayer(entry.layer)) {
             entry.legend.addTo(map);
           } else {
             entry.legend.remove();
           }
         }
-
-        if (map.hasLayer(boundaryLayer)) {
-          boundaryLayer.bringToFront();
-        }
       }
 
-      map.on(
-        "overlayadd overlayremove",
-        updateLegends
-      );
+      map.on("overlayadd overlayremove", updateLegends);
+
+      // A previously hidden layer must use the current selection
+      // when it is added again.
+      map.on("overlayadd", event => {
+        if (soilLayers.includes(event.layer)) {
+          event.layer.redraw();
+        }
+      });
+
+      updateLegends();
 
       // ========================================================
-      // Polygon selection interface
+      // Polygon selection
       // ========================================================
 
-      let polygonListElement;
-      let noFilterCheckbox;
       let filterSummaryElement;
+      let clearFiltersButton;
+      let zoomButton;
 
       const polygonCheckboxes = [];
 
       function getPolygonLabel(feature, index) {
-        const value =
-          feature.properties?.[POLYGON_LABEL_FIELD];
+        const value = feature.properties?.[POLYGON_LABEL_FIELD];
 
         if (
           value !== undefined &&
@@ -609,54 +650,42 @@
       }
 
       function applyPolygonSelection() {
-        if (!boundaryLoaded) return;
+        const selectedFeatures = allBoundaryFeatures.filter(
+          (_, index) => selectedPolygonIds.has(index)
+        );
 
-        const selectedFeatures =
-          allBoundaryFeatures.filter(
-            (_, index) => selectedPolygonIds.has(index)
-          );
-
-        activeBoundary = noFilter
-          ? null
-          : {
+        activeBoundary = selectedFeatures.length > 0
+          ? {
               type: "FeatureCollection",
               features: selectedFeatures
-            };
+            }
+          : null;
 
         boundaryLayer.clearLayers();
 
-        if (!noFilter) {
+        if (activeBoundary !== null) {
           boundaryLayer.addData(activeBoundary);
         }
-
-        noFilterCheckbox.checked = noFilter;
-
-        polygonListElement.classList.toggle(
-          "disabled",
-          noFilter
-        );
 
         for (const item of polygonCheckboxes) {
           item.checkbox.checked =
             selectedPolygonIds.has(item.index);
-
-          item.checkbox.disabled = noFilter;
         }
 
-        if (noFilter) {
-          filterSummaryElement.textContent =
-            "No filter: showing the complete soil raster.";
-        } else if (selectedFeatures.length === 0) {
-          filterSummaryElement.textContent =
-            "No polygons selected. Soil raster is hidden.";
-        } else {
-          filterSummaryElement.textContent =
-            `${selectedFeatures.length} of ` +
-            `${allBoundaryFeatures.length} polygons selected.`;
-        }
+        const hasSelection = selectedFeatures.length > 0;
+
+        clearFiltersButton.disabled = !hasSelection;
+
+        zoomButton.textContent = hasSelection
+          ? "Zoom to selection"
+          : "Zoom to full map";
+
+        filterSummaryElement.textContent = hasSelection
+          ? `${selectedFeatures.length} of ` +
+            `${allBoundaryFeatures.length} polygons selected.`
+          : "No filters applied. Showing the full soil raster.";
 
         redrawSoilLayers();
-        updateLegends();
       }
 
       function addPolygonFilterControl() {
@@ -664,7 +693,7 @@
           position: "topleft"
         });
 
-        control.onAdd = function() {
+        control.onAdd = function () {
           const container = L.DomUtil.create(
             "div",
             "polygon-filter"
@@ -674,177 +703,97 @@
           title.className = "polygon-filter-title";
           title.textContent = "Filter soil maps by polygon";
 
-          const noFilterLabel =
-            document.createElement("label");
+          const help = document.createElement("div");
+          help.className = "polygon-filter-help";
+          help.textContent =
+            "Select polygons to filter. Leave all unchecked " +
+            "to show the full map.";
 
-          noFilterCheckbox =
-            document.createElement("input");
+          const list = document.createElement("div");
+          list.className = "polygon-filter-list";
 
-          noFilterCheckbox.type = "checkbox";
-          noFilterCheckbox.checked = noFilter;
+          allBoundaryFeatures.forEach((feature, index) => {
+            const label = document.createElement("label");
 
-          const noFilterText =
-            document.createElement("span");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = false;
 
-          noFilterText.textContent =
-            "No filter — show full raster";
+            const text = document.createElement("span");
+            text.textContent = getPolygonLabel(feature, index);
 
-          noFilterLabel.append(
-            noFilterCheckbox,
-            noFilterText
-          );
+            checkbox.addEventListener("change", () => {
+              if (checkbox.checked) {
+                selectedPolygonIds.add(index);
+              } else {
+                selectedPolygonIds.delete(index);
+              }
 
-          noFilterCheckbox.addEventListener(
-            "change",
-            () => {
-              noFilter = noFilterCheckbox.checked;
               applyPolygonSelection();
-            }
-          );
+            });
 
-          polygonListElement =
-            document.createElement("div");
+            polygonCheckboxes.push({ checkbox, index });
 
-          polygonListElement.className =
-            "polygon-filter-list";
+            label.append(checkbox, text);
+            list.appendChild(label);
+          });
 
-          allBoundaryFeatures.forEach(
-            (feature, index) => {
-              const label =
-                document.createElement("label");
-
-              const checkbox =
-                document.createElement("input");
-
-              checkbox.type = "checkbox";
-
-              checkbox.checked =
-                selectedPolygonIds.has(index);
-
-              checkbox.disabled = noFilter;
-
-              const text =
-                document.createElement("span");
-
-              text.textContent =
-                getPolygonLabel(feature, index);
-
-              checkbox.addEventListener(
-                "change",
-                () => {
-                  if (checkbox.checked) {
-                    selectedPolygonIds.add(index);
-                  } else {
-                    selectedPolygonIds.delete(index);
-                  }
-
-                  applyPolygonSelection();
-                }
-              );
-
-              polygonCheckboxes.push({
-                checkbox,
-                index
-              });
-
-              label.append(checkbox, text);
-              polygonListElement.appendChild(label);
-            }
-          );
-
-          const actions =
-            document.createElement("div");
-
+          const actions = document.createElement("div");
           actions.className = "polygon-filter-actions";
 
-          const selectAllButton =
-            document.createElement("button");
-
+          const selectAllButton = document.createElement("button");
           selectAllButton.type = "button";
           selectAllButton.textContent = "Select all";
 
-          selectAllButton.addEventListener(
-            "click",
-            () => {
-              noFilter = false;
+          selectAllButton.addEventListener("click", () => {
+            allBoundaryFeatures.forEach((_, index) => {
+              selectedPolygonIds.add(index);
+            });
 
-              allBoundaryFeatures.forEach(
-                (_, index) => {
-                  selectedPolygonIds.add(index);
-                }
-              );
+            applyPolygonSelection();
+          });
 
-              applyPolygonSelection();
-            }
-          );
+          clearFiltersButton = document.createElement("button");
+          clearFiltersButton.type = "button";
+          clearFiltersButton.textContent = "Clear filters";
 
-          const clearButton =
-            document.createElement("button");
+          clearFiltersButton.addEventListener("click", () => {
+            selectedPolygonIds.clear();
+            applyPolygonSelection();
+          });
 
-          clearButton.type = "button";
-          clearButton.textContent = "Deselect all";
-
-          clearButton.addEventListener(
-            "click",
-            () => {
-              noFilter = false;
-              selectedPolygonIds.clear();
-              applyPolygonSelection();
-            }
-          );
-
-          const zoomButton =
-            document.createElement("button");
-
+          zoomButton = document.createElement("button");
           zoomButton.type = "button";
-          zoomButton.textContent = "Zoom to selection";
 
-          zoomButton.addEventListener(
-            "click",
-            () => {
-              if (noFilter) {
-                map.fitBounds(rasterBounds);
-                return;
-              }
+          zoomButton.addEventListener("click", () => {
+            const bounds = activeBoundary === null
+              ? rasterBounds
+              : boundaryLayer.getBounds();
 
-              if (
-                activeBoundary &&
-                activeBoundary.features.length > 0
-              ) {
-                const bounds =
-                  boundaryLayer.getBounds();
-
-                if (bounds.isValid()) {
-                  map.fitBounds(bounds, {
-                    padding: [25, 25],
-                    maxZoom: MAX_ZOOM
-                  });
-                }
-              }
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, {
+                paddingTopLeft: [30, 30],
+                paddingBottomRight: [30, 30],
+                maxZoom: MAX_ZOOM
+              });
             }
-          );
+          });
 
           actions.append(
             selectAllButton,
-            clearButton,
+            clearFiltersButton,
             zoomButton
           );
 
-          filterSummaryElement =
-            document.createElement("div");
-
-          filterSummaryElement.className =
-            "polygon-filter-summary";
-
-          filterSummaryElement.setAttribute(
-            "role",
-            "status"
-          );
+          filterSummaryElement = document.createElement("div");
+          filterSummaryElement.className = "polygon-filter-summary";
+          filterSummaryElement.setAttribute("role", "status");
+          filterSummaryElement.setAttribute("aria-live", "polite");
 
           container.append(
             title,
-            noFilterLabel,
-            polygonListElement,
+            help,
+            list,
             actions,
             filterSummaryElement
           );
@@ -859,13 +808,10 @@
       }
 
       // ========================================================
-      // Read existing shapefile components
+      // Load existing shapefile
       // ========================================================
 
-      async function fetchBoundaryFile(
-        extension,
-        asText = false
-      ) {
+      async function fetchBoundaryFile(extension, asText = false) {
         const url = `${BOUNDARY_BASE}.${extension}`;
         const response = await fetch(url);
 
@@ -882,20 +828,15 @@
 
       async function loadExistingBoundary() {
         try {
-          const [
-            shpBuffer,
-            dbfBuffer,
-            projection
-          ] = await Promise.all([
-            fetchBoundaryFile("shp"),
-            fetchBoundaryFile("dbf"),
-            fetchBoundaryFile("prj", true)
-          ]);
+          const [shpBuffer, dbfBuffer, projection] =
+            await Promise.all([
+              fetchBoundaryFile("shp"),
+              fetchBoundaryFile("dbf"),
+              fetchBoundaryFile("prj", true)
+            ]);
 
           if (!projection.trim()) {
-            throw new Error(
-              "The boundary .prj file is empty."
-            );
+            throw new Error("The boundary .prj file is empty.");
           }
 
           const geojson = await shp({
@@ -904,8 +845,13 @@
             prj: projection
           });
 
-          allBoundaryFeatures =
-            geojson.features.filter(feature =>
+          const collections = Array.isArray(geojson)
+            ? geojson
+            : [geojson];
+
+          allBoundaryFeatures = collections
+            .flatMap(collection => collection.features || [])
+            .filter(feature =>
               feature.geometry &&
               (
                 feature.geometry.type === "Polygon" ||
@@ -925,9 +871,7 @@
           }).getBounds();
 
           if (!bounds.isValid()) {
-            throw new Error(
-              "The boundary coordinates are invalid."
-            );
+            throw new Error("The boundary coordinates are invalid.");
           }
 
           if (!rasterBounds.intersects(bounds)) {
@@ -937,17 +881,8 @@
             );
           }
 
-          // Remember all polygons as selected.
-          // They become active when No filter is unchecked.
+          // Start with nothing selected: full raster.
           selectedPolygonIds.clear();
-
-          allBoundaryFeatures.forEach(
-            (_, index) => {
-              selectedPolygonIds.add(index);
-            }
-          );
-
-          boundaryLoaded = true;
 
           addPolygonFilterControl();
           applyPolygonSelection();
@@ -962,33 +897,27 @@
 
           console.info(
             "Available attribute fields:",
-            Object.keys(
-              allBoundaryFeatures[0].properties || {}
-            )
+            Object.keys(allBoundaryFeatures[0].properties || {})
           );
         } catch (error) {
-          console.error(
-            "Boundary loading failed:",
-            error
-          );
+          console.error("Boundary loading failed:", error);
 
-          boundaryLoaded = false;
+          // A shapefile failure must not hide the raster.
+          selectedPolygonIds.clear();
           activeBoundary = null;
 
           boundaryLayer.clearLayers();
           redrawSoilLayers();
-          updateLegends();
 
           statusElement.classList.add("error");
-
           statusElement.textContent =
-            "Could not load polygon filters: " +
+            "Polygon filters could not be loaded. " +
+            "The full soil raster remains available. " +
             error.message;
         }
       }
 
       loadExistingBoundary();
-
     });
   </script>
 </body>
